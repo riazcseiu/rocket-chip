@@ -8,6 +8,7 @@ the RISC-V Rocket Core. For more information on Rocket Chip, please consult our 
 
 ## Table of Contents
 
++ [Configration for decimal accelerator](#accelerator)
 + [Quick instructions](#quick) for those who want to dive directly into the details without knowing exactly what's in the repository.
 + [What's in the Rocket chip generator repository?](#what)
 + [How should I use the Rocket chip generator?](#how)
@@ -17,7 +18,56 @@ the RISC-V Rocket Core. For more information on Rocket Chip, please consult our 
 + [How can I parameterize my Rocket chip?](#param)
 + [Debugging with GDB](#debug)
 + [Contributors](#contributors)
-+ [Configration for decimal accelerator](#accelerator)
+
+
+
+
+
+## <a name="accelerator"></a> Configration for decimal accelerator
+
+### Following environmental variable must set before use
+
+
+	export RISCV=/path/to/install/riscv/toolchain
+	export PATH=$RISCV/bin:$PATH
+	export MAKEFLAGS="$MAKEFLAGS -j4"   // using emulator
+
+
+### File location for modify  and configure Rocc
+	cd~/project-template/rocket-chip/src/main/scala/system/Configs.scala
+	cd ~/project-template/rocket-chip/src/main/scala/subsystem/Configs.scala
+### Accelerator File for modification
+	cd ~/project-template/rocket-chip/src/main/scala/tile/LazyRoCC.scala
+
+### Build New Rocc
+	cd emulator
+Set the environment variable 
+	LD_LIBRARY_PATH=/usr/local/lib64/:$LD_LIBRARY_PATH 
+	export LD_LIBRARY_PATH
+
+	make CONFIG=RoccExampleConfig
+It will generate following executable in emulator folder 
+emulator-freechips.rocketchip.system-RoccExampleConfig
+
+### Execute using accelerator 
+	cd emulator
+	./emulator-freechips.rocketchip.system-RoccExampleConfig -c pk pk/examples-pk-accumulator
+	For detail
+	./emulator-freechips.rocketchip.system-RoccExampleConfig +verbose pk pk/examples-pk-accumulator
+
+Writing C code using accelerator and make the c executable for RISCV ISA
+
+### Making executable 
+	riscv64-unknown-elf-gcc examples-pk-accumulator.c -o examples-pk-accumulator
+
+
+
+
+
+
+
+
+
 
 ## <a name="quick"></a> Quick Instructions
 
@@ -674,44 +724,4 @@ Can be found [here](https://github.com/ucb-bar/rocket-chip/graphs/contributors).
 If used for research, please cite Rocket Chip by the technical report:
 
 Krste Asanović, Rimas Avižienis, Jonathan Bachrach, Scott Beamer, David Biancolin, Christopher Celio, Henry Cook, Palmer Dabbelt, John Hauser, Adam Izraelevitz, Sagar Karandikar, Benjamin Keller, Donggyu Kim, John Koenig, Yunsup Lee, Eric Love, Martin Maas, Albert Magyar, Howard Mao, Miquel Moreto, Albert Ou, David Patterson, Brian Richards, Colin Schmidt, Stephen Twigg, Huy Vo, and Andrew Waterman, _[The Rocket Chip Generator](http://www.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-17.html)_, Technical Report UCB/EECS-2016-17, EECS Department, University of California, Berkeley, April 2016
-
-
-
-## <a name="accelerator"></a> Configration for decimal accelerator
-
-### Following environmental variable must set before use
-
-
-	export RISCV=/path/to/install/riscv/toolchain
-	export PATH=$RISCV/bin:$PATH
-	export MAKEFLAGS="$MAKEFLAGS -j4"   // using emulator
-
-
-### File location for modify  and configure Rocc
-	cd~/project-template/rocket-chip/src/main/scala/system/Configs.scala
-	cd ~/project-template/rocket-chip/src/main/scala/subsystem/Configs.scala
-### Accelerator File for modification
-	cd ~/project-template/rocket-chip/src/main/scala/tile/LazyRoCC.scala
-
-### Build New Rocc
-	cd emulator
-Set the environment variable 
-	LD_LIBRARY_PATH=/usr/local/lib64/:$LD_LIBRARY_PATH 
-	export LD_LIBRARY_PATH
-
-	make CONFIG=RoccExampleConfig
-It will generate following executable in emulator folder 
-emulator-freechips.rocketchip.system-RoccExampleConfig
-
-### Execute using accelerator 
-	cd emulator
-	./emulator-freechips.rocketchip.system-RoccExampleConfig -c pk pk/examples-pk-accumulator
-	For detail
-	./emulator-freechips.rocketchip.system-RoccExampleConfig +verbose pk pk/examples-pk-accumulator
-
-Writing C code using accelerator and make the c executable for RISCV ISA
-
-### Making executable 
-	riscv64-unknown-elf-gcc examples-pk-accumulator.c -o examples-pk-accumulator
-
 
