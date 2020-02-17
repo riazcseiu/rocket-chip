@@ -31,6 +31,14 @@ the RISC-V Rocket Core. For more information on Rocket Chip, please consult our 
 	export RISCV=/path/to/install/riscv/toolchain
 	export PATH=$RISCV/bin:$PATH
 	export MAKEFLAGS="$MAKEFLAGS -j4"   // using emulator
+	
+	or
+	setenv RISCV /path/to/install/riscv/toolchain
+	setenv PATH $RISCV/bin:$PATH
+	setenv MAKEFLAGS -j8
+	setenv LD_LIBRARY_PATH
+	Setenv LD_LIBRARY_PATH /usr/local/lib64/:$LD_LIBRARY_PATH 
+
 
 
 ### File location for modify  and configure Rocc
