@@ -682,36 +682,36 @@ Krste Asanović, Rimas Avižienis, Jonathan Bachrach, Scott Beamer, David Bianco
 ### Following environmental variable must set before use
 
 
-export RISCV=/path/to/install/riscv/toolchain
-export PATH=$RISCV/bin:$PATH
-export MAKEFLAGS="$MAKEFLAGS -j4"   // using emulator
+	export RISCV=/path/to/install/riscv/toolchain
+	export PATH=$RISCV/bin:$PATH
+	export MAKEFLAGS="$MAKEFLAGS -j4"   // using emulator
 
 
 ### File location for modify  and configure Rocc
-cd~/project-template/rocket-chip/src/main/scala/system/Configs.scala
-cd ~/project-template/rocket-chip/src/main/scala/subsystem/Configs.scala
-Accelerator File for modification
-cd ~/project-template/rocket-chip/src/main/scala/tile/LazyRoCC.scala
+	cd~/project-template/rocket-chip/src/main/scala/system/Configs.scala
+	cd ~/project-template/rocket-chip/src/main/scala/subsystem/Configs.scala
+### Accelerator File for modification
+	cd ~/project-template/rocket-chip/src/main/scala/tile/LazyRoCC.scala
 
 ### Build New Rocc
-cd emulator
+	cd emulator
 Set the environment variable 
-LD_LIBRARY_PATH=/usr/local/lib64/:$LD_LIBRARY_PATH 
-export LD_LIBRARY_PATH
+	LD_LIBRARY_PATH=/usr/local/lib64/:$LD_LIBRARY_PATH 
+	export LD_LIBRARY_PATH
 
-make CONFIG=RoccExampleConfig
+	make CONFIG=RoccExampleConfig
 It will generate following executable in emulator folder 
 emulator-freechips.rocketchip.system-RoccExampleConfig
 
 ### Execute using accelerator 
-cd emulator
-./emulator-freechips.rocketchip.system-RoccExampleConfig -c pk pk/examples-pk-accumulator
-For detail
-./emulator-freechips.rocketchip.system-RoccExampleConfig +verbose pk pk/examples-pk-accumulator
+	cd emulator
+	./emulator-freechips.rocketchip.system-RoccExampleConfig -c pk pk/examples-pk-accumulator
+	For detail
+	./emulator-freechips.rocketchip.system-RoccExampleConfig +verbose pk pk/examples-pk-accumulator
 
 Writing C code using accelerator and make the c executable for RISCV ISA
 
 ### Making executable 
-riscv64-unknown-elf-gcc examples-pk-accumulator.c -o examples-pk-accumulator
+	riscv64-unknown-elf-gcc examples-pk-accumulator.c -o examples-pk-accumulator
 
 
