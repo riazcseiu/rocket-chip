@@ -17,7 +17,7 @@ the RISC-V Rocket Core. For more information on Rocket Chip, please consult our 
 + [How can I parameterize my Rocket chip?](#param)
 + [Debugging with GDB](#debug)
 + [Contributors](#contributors)
-+ Configration for decimal accelerator 
++ [Configration for decimal accelerator] (#accelerator)
 
 ## <a name="quick"></a> Quick Instructions
 
@@ -677,6 +677,6 @@ Krste Asanović, Rimas Avižienis, Jonathan Bachrach, Scott Beamer, David Bianco
 
 
 
-## <a name="quick"></a> Configration for decimal accelerator
+## <a name="accelerator"></a> Configration for decimal accelerator
 
 
