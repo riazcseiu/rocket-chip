@@ -68,7 +68,8 @@ Writing C code using accelerator and make the c executable for RISCV ISA
 ### Making executable 
 	riscv64-unknown-elf-gcc examples-pk-accumulator.c -o examples-pk-accumulator
 
-
+### Package for RISCV Tools 
+	$ sudo apt-get install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev libusb-1.0-0-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev device-tree-compiler pkg-config libexpat-dev
 
 
 
