@@ -1037,8 +1037,347 @@ when (cmd.fire() && (doWrite || doAccum))
 {
      printf("Accumulator: Write  ")
 
-    regfile(addr) := wdata // write wadata accumulator // see datapath val accum = regfile(addr)//wdata is stte or MUX output  and  val wdata = Mux(doWrite, addend, accum + addend)
+  
+  
+  // decimal one digit CLA it takes one BCD digit with 1 bit carry and returen 4 bit sum and one bit carry
+    def CLA (a:Bits, b:Bits, carry:UInt):(Bits,UInt) =
+      {
+        val cin  = Wire (UInt(1.W))
+          cin := carry
+        val gdigit, pdigit,cout,k,l,c1 = Wire (Bits(1.W))
+        val a1,b1,g,p,h = Wire(Bits(4.W))//Wire(Vec(4,Bits(1.W)))
+        val s = Wire(Vec(4,Bool()))
+          a1:=a
+          b1:=b
+          g:=a1&b1
+          p:=a1|b1
+          h:=a1^b1
+          k := ( p(3) | g(2) ) & ( p(3) | p(1) ) & ( g(3) | p(2) | p(1) )
+          l := ( p(3) | p(2) ) & ( p(3) | g(2) | g(1) )
+          cout := k | ( l & c1 )
+          c1 := ( a(0) & b(0) ) | ( a(0) & cin ) | ( b(0) & cin )
+          //  printf("---CLA START---\n")
+          //  printf("cin %x\n",cin)
+           s(0) := h(0) ^ cin
+          //printf("s0 %x\n",s(0).asUInt)
+
+          s(1) := ( h(1) & ~c1 & ~k ) | ( h(1) & c1 & l ) | ( ~h(1) & c1 & ~l ) | ( ~h(1) & ~c1 & k )
+          // printf("s1 %x\n",s(1).asUInt)
+
+          s(2) := ( ~p(2) & g(1) ) | ( ~p(3) & h(2) & ~p(1) ) | ( ~p(3) & ~p(2) & p(1) & c1 ) | ( g(2) & g(1) & c1 ) | ( p(3) & p(2) & c1 ) |( g(3) & ~c1 ) | ( h(2) & h(1) & ~c1 )
+          // printf("s2 %x\n",s(2).asUInt)
+          s(3) := ( g(3) & c1 ) | ( ~h(3) & h(2) & h(1) & c1 ) | ( l & ~k  & ~c1 )
+          //  printf("s3 %x\n",s(3).asUInt)
+
+          // a + b = 9, pdigit = 1; a + b >= 10, gdigit = 1;
+          gdigit := k | ( l & g(0) );
+          pdigit := l & h(0);
+
+        // printf("CLA RESULT a b cin sum carry ,%x,%x,%x,%x, %x\n",a,b, cin,s.asUInt , cout.asUInt)
+        // printf("-----CLA END------")
+      return (s.asUInt,cout.asUInt)
+    } 
+   
+
+    // This method takes two 64 bit number  and one one bit number as input and reuten one 64 bit with one carry as output;
+    def seventeenDigitCLA (addend_1:Bits, addend_2:Bits) :Bits=
+      {
+        // val initialCarry = UInt(1.W)
+        // initialCarry := 0.U
+        val a = Wire (Bits(68.W))
+        val b = Wire (Bits(68.W))
+        // val sum1,sum2,sum3,sum4,sum5,sum6,sum7,sum8,sum9,sum10,sum11,sum12,sum13,sum14,sum15,sum16,sum17 = Wire(Bits(4.W))
+        // val carry1,carry2,carry3,carry4,carry5,carry6,carry7,carry8,carry9,carry10,carry11,carry12,carry13,carry14,carry15,carry16,carry17 = Wire(Bits(1.W))
+        val sum = Wire(Bits(68.W))
+          a := addend_1
+          b := addend_2  
+        val(sum1,carry1)  =  CLA (a(3,0),    b(3,0),   0.U)
+        val(sum2,carry2)  =  CLA (a(7,4),    b(7,4),   carry1)
+        val(sum3,carry3)  =  CLA (a(11,8),   b(11,8),  carry2)
+        val(sum4,carry4)  =  CLA (a(15,12),  b(15,12), carry3)
+        val(sum5,carry5)  =  CLA (a(19,16),  b(19,16), carry4)
+        val(sum6,carry6)  =  CLA (a(23,20),  b(23,20), carry5)
+        val(sum7,carry7)  =  CLA (a(27,24),  b(27,24), carry6)
+        val(sum8,carry8)  =  CLA (a(31,28),  b(31,28), carry7)
+        val(sum9,carry9)  =  CLA (a(35,32),  b(35,32), carry8)
+        val(sum10,carry10) =  CLA (a(39,36),  b(39,36), carry9)
+        val(sum11,carry11) =  CLA (a(43,40),  b(43,40),carry10)
+        val(sum12,carry12) =  CLA (a(47,44),  b(47,44),carry11)
+        val(sum13,carry13) =  CLA (a(51,48),  b(51,48),carry12)
+        val(sum14,carry14) =  CLA (a(55,52),  b(55,52),carry13)
+        val(sum15,carry15) =  CLA (a(59,56),  b(59,56),carry14)
+        val(sum16,carry16) =  CLA (a(63,60),  b(63,60),carry15)
+        val(sum17,carry17) =  CLA (a(67,64),  b(67,64),carry16)
+          // sum := Cat(sum1,sum2 ,sum3,sum4,sum5,sum6,sum7,sum8,sum9,sum10,sum11,sum12,sum13,sum14,sum15,sum16,sum17)
+          sum := Cat(sum17,sum16,sum15,sum14,sum13,sum12,sum11,sum10,sum9,sum8,sum7,sum6,sum5,sum4,sum3,sum2,sum1)
+          printf(" sum 1-17 are %x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n",sum1,sum2 ,sum3,sum4,sum5,sum6,sum7,sum8,sum9,sum10,sum11,sum12,sum13,sum14,sum15,sum16,sum17)
+          printf("Seventeen Degit Adder OUTPUT %x, %x, %x \n", a,b,sum)
+      return (sum.asUInt)
+      //sum16._1.asUInt.asBool
+    }
+      //val pre1 =  seventeenDigitCLA(multiplicand_X, multiplicand_X)
+      // printf("result of addition is %x",pre1)
+      // This method takes two 71 bit number  and one one bit number as input and reuten one 71 bit(carry free ) with one carry as output;
+    def eighteenDigitCLA (addend_1:Bits, addend_2:Bits) :Bits=
+      {
+        val a = Wire (Bits(72.W))
+        val b = Wire (Bits(72.W))
+          a := addend_1
+          b:= addend_2
+        val sum1 =  seventeenDigitCLA( a(67,0),b(67,0))
+        val sum2 = CLA (a(71,68),    b(71,68), a(67))
+        //val sum = Cat(sum1,sum2._1)
+        val sum = Cat(sum2._1,sum1)
+        return (sum.asUInt)
+      } 
+
+    def twentyDigitCLA (addend_1:Bits, addend_2:Bits) :Bits=
+      {
+        val sum = Wire (Bits(80.W))
+        val a = Wire (Bits(80.W))
+        val b = Wire (Bits(80.W))
+          a := addend_1
+          b:= addend_2
+          printf("incomming of twenty digit is %x, %x",a,b)
+          //val sum1 = seventeenDigitCLA( a(67,0),b(67,0))
+      val(sum1,carry1)   =  CLA (a(3,0),    b(3,0),   0.U)
+      val(sum2,carry2)   =  CLA (a(7,4),    b(7,4),   carry1)
+      val(sum3,carry3)   =  CLA (a(11,8),   b(11,8),  carry2)
+      val(sum4,carry4)   =  CLA (a(15,12),  b(15,12), carry3)
+      val(sum5,carry5)   =  CLA (a(19,16),  b(19,16), carry4)
+      val(sum6,carry6)   =  CLA (a(23,20),  b(23,20), carry5)
+      val(sum7,carry7)   =  CLA (a(27,24),  b(27,24), carry6)
+      val(sum8,carry8)   =  CLA (a(31,28),  b(31,28), carry7)
+      val(sum9,carry9)   =  CLA (a(35,32),  b(35,32), carry8)
+      val(sum10,carry10) =  CLA (a(39,36),  b(39,36), carry9)
+      val(sum11,carry11) =  CLA (a(43,40),  b(43,40),carry10)
+      val(sum12,carry12) =  CLA (a(47,44),  b(47,44),carry11)
+      val(sum13,carry13) =  CLA (a(51,48),  b(51,48),carry12)
+      val(sum14,carry14) =  CLA (a(55,52),  b(55,52),carry13)
+      val(sum15,carry15) =  CLA (a(59,56),  b(59,56),carry14)
+      val(sum16,carry16) =  CLA (a(63,60),  b(63,60),carry15)
+      val(sum17,carry17) =  CLA (a(67,64),  b(67,64),carry16)
+      val(sum18,carry18) =  CLA (a(71,68),  b(71,68),carry17)
+      val(sum19,carry19) = CLA (a(75,72),   b(75,72),carry18)
+      val(sum20,carry20) = CLA (a(79,76),   b(79,76),carry19)
+        sum := Cat(sum20,sum19,sum18,sum17,sum16,sum15,sum14,sum13,sum12,sum11,sum10,sum9,sum8,sum7,sum6,sum5,sum4,sum3,sum2,sum1)
+        printf(" sum 1-20 are %x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n",sum1,sum2 ,sum3,sum4,sum5,sum6,sum7,sum8,sum9,sum10,sum11,sum12,sum13,sum14,sum15,sum16,sum17,sum18,sum19,sum20)
+        // val sum = Cat(sum1,sum2._1,sum3._1,sum4._1)
+        //al sum = Cat(sum4._1,sum3._1,sum2._1,sum1)
+      return (sum.asUInt)
+    }
+
+    def twentyfourDigitCLA (addend_1:Bits, addend_2:Bits) :Bits=
+      {
+        val a = Wire (Bits(96.W))
+        val b = Wire (Bits(96.W))
+          a := addend_1
+          b:= addend_2
+        val sum1 =  twentyDigitCLA( a(79,0),b(79,0))
+        val sum2 = CLA (a(83,80),    b(83,80), a(79))
+        val sum3 = CLA (a(87,84),    b(87,84), a(83))
+        val sum4 = CLA (a(91,88),    b(91,88), a(87))
+        val sum5 = CLA (a(95,92),    b(95,92), a(91))
+        // val sum = Cat(sum1,sum2._1,sum3._1,sum4._1,sum5._1)
+        val sum = Cat(sum5._1,sum4._1,sum3._1,sum2._1,sum1)
+        return (sum.asUInt)
+      }
+
+
+      // preCoumpute is the value of 1X to 9X This porcess use CLA siquentially
+      // and generate . 
+      // val preCompute = Reg(Vec(10,Bits(68.W)))
+      // val pre1 = Wire(Bits(68.W))
+      //preCompute(0) := Bits("b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000")
+      //preCompute(1) := Cat(Bits("b0000"),multiplicand_X)
+      //preCompute(2) :=seventeenDigitCLA(preCompute(1), Cat(Bits("b0000"),multiplicand_X))
+      //preCompute(3) :=seventeenDigitCLA(preCompute(2), Cat(Bits("b0000"),multiplicand_X))
+      //preCompute(4) :=seventeenDigitCLA(preCompute(3), Cat(Bits("b0000"),multiplicand_X))
+      //preCompute(5) :=seventeenDigitCLA(preCompute(4), Cat(Bits("b0000"),multiplicand_X))
+      //preCompute(6) :=seventeenDigitCLA(preCompute(5), Cat(Bits("b0000"),multiplicand_X))
+      //preCompute(7) :=seventeenDigitCLA(preCompute(6), Cat(Bits("b0000"),multiplicand_X))
+      //preCompute(8) :=seventeenDigitCLA(preCompute(7), Cat(Bits("b0000"),multiplicand_X))
+      //preCompute(9) :=seventeenDigitCLA(preCompute(8), Cat(Bits("b0000"),multiplicand_X))
+      //printf("precom %x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n", preCompute(0), preCompute(1), preCompute(2), preCompute(3), preCompute(4), preCompute(5), preCompute(6) ,preCompute(7), preCompute(8),preCompute(9) )
+
+      //======================
+  
+  val busy = Reg(init = {Bool(false)}) //initialize to false
+  val r_recv_max = Reg(UInt(width = xLen));
+  val r_cmd_count = Reg(UInt(width = xLen));
+  val r_recv_count = Reg(UInt(width = xLen));
+  ///val r_resp_rd = Reg(io.resp.bits.rd)
+  val r_addr = Reg(UInt(width = xLen))
+  // datapath
+  val r_total = Reg(UInt(width = xLen));
+  val r_tag = Reg(UInt(width = outer.n))//riaz add outer
+  val s_idle :: s_mem_acc :: s_finish :: Nil = Enum(Bits(), 3) //FSM
+  val r_cmd_state = Reg(UInt(width = 3), init = s_idle) // register withd 3 initail value S_idle
+  val r_recv_state = Reg(UInt(width = 3), init = s_idle)
+  //when (io.cmd.valid) {
+  //  printf("MemTotalExample: On Going. %x, %x\n", r_cmd_state, r_recv_state)
+  //  }
+  //when (io.cmd.fire()) {
+  printf("Accum Mul: Command Received. %x, %x\n", io.cmd.bits.rs1, io.cmd.bits.rs2)
+  r_total := UInt(0)
+  r_addr := io.cmd.bits.rs1
+  r_recv_max := io.cmd.bits.rs2
+  r_recv_count := UInt(0)
+  r_cmd_count := UInt(0)
+  r_tag := UInt(0)
+  r_resp_rd := io.cmd.bits.inst.rd
+  r_cmd_state := s_mem_acc
+  r_recv_state := s_mem_acc
+  //}
+  io.cmd.ready := (r_cmd_state === s_idle)
+  // command resolved if no stalls AND not issuing a load that will need a request
+  val cmd_finished = r_cmd_count === r_recv_max
+  when ((r_cmd_state === s_mem_acc) && io.mem.req.fire()) 
+  {
+  printf("AccumMul: IO.MEM Command Received %x %x\n", io.mem.resp.bits.data, r_cmd_state)
+  r_cmd_count := r_cmd_count + UInt(1)
+  r_tag := r_tag + UInt(1)
+  r_addr := r_addr + UInt(8)
+  r_cmd_state := Mux(cmd_finished, s_idle, s_mem_acc)
+  }
+  // MEMORY REQUEST INTERFACE
+  io.mem.req.valid := (r_cmd_state === s_mem_acc)
+  io.mem.req.bits.addr := r_addr
+  io.mem.req.bits.tag := r_tag
+  io.mem.req.bits.cmd := M_XRD // perform a load (M_XWR for stores)
+  io.mem.req.bits.typ := MT_D // D = 8 bytes, W = 4, H = 2, B = 1
+  io.mem.req.bits.data := Bits(0) // we're not performing any stores...
+  io.mem.req.bits.phys := Bool(false)
+ // io.mem.invalidate_lr := Bool(false)
+  val recv_finished = (r_recv_count === r_recv_max)
+  when (r_recv_state === s_mem_acc && io.mem.resp.valid) 
+  {
+  printf("Accum Mul: IO.MEM Received %x %x\n", io.mem.resp.bits.data, r_recv_state)
+  //r_total := r_total + io.mem.resp.bits.data
+  preCompute(r_recv_count)  :=  io.mem.resp.bits.data
+  r_recv_count := r_recv_count + UInt(1)
+  r_recv_state := Mux(recv_finished, s_finish, s_mem_acc)
+  printf("precom %x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n", preCompute(0), preCompute(1), preCompute(2), preCompute(3), preCompute(4), preCompute(5), preCompute(6) ,preCompute(7), preCompute(8),preCompute(9) )
+
+  }
+
+  // control line
+  when (io.mem.req.fire()) {
+  busy := Bool(true)
+  }
+  when ((r_recv_state === s_finish) && io.resp.fire()) {
+  r_recv_state := s_idle
+  printf("MemTotalExample: Finished. Answer = %x\n", r_total)
+  }
+  
+  ---------------------
+     //=================
+  
+
+      pp(0) := preCompute(multiplier_Y(3,0))
+      pp(1) := preCompute(multiplier_Y(7,4))
+      pp(2) := preCompute(multiplier_Y(11,8))
+      pp(3) := preCompute(multiplier_Y(15,12))
+      pp(4) := preCompute(multiplier_Y(19,16))
+      pp(5) := preCompute(multiplier_Y(23,20))
+      pp(6) := preCompute(multiplier_Y(27,24))
+      pp(7) := preCompute(multiplier_Y(31,28))
+      pp(8) := preCompute(multiplier_Y(35,32))
+      pp(9) := preCompute(multiplier_Y(39,36))
+      pp(10) := preCompute(multiplier_Y(43,40))
+      pp(11) := preCompute(multiplier_Y(47,44))
+      pp(12) := preCompute(multiplier_Y(51,48))
+      pp(13) := preCompute(multiplier_Y(55,52))
+      pp(14) := preCompute(multiplier_Y(59,56))
+      pp(15) := preCompute(multiplier_Y(63,60))
+      printf("pp0-pp14 %x,\n %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n,%x\n,%x\n",pp(0),pp(1),pp(2),pp(3),pp(4),pp(5),pp(6),pp(7),pp(8),pp(9),pp(10),pp(11),pp(12),pp(13),pp(14),pp(15))
+
+    val level1_1, level1_2, level1_3, level1_4, level1_5, level1_6, level1_7, level1_8 = Wire(Bits(68.W))
+    val level2_1, level2_2, level2_3, level2_4                                         = Wire(Bits(72.W))
+
+    val level3_1, level3_2                                                             = Wire(Bits(80.W))
+    val level4_1                                                                       = Wire(Bits(96.W))
+
+      level1_1 := seventeenDigitCLA (Cat(Bits("b0000"), pp(0)(67,4).asUInt), pp(1))
+    val level1_1_1 = Cat(level1_1,pp(0)(3,0))
+      printf("level1_1_1 %x",level1_1_1) 
+
+      level1_2 := seventeenDigitCLA (Cat(Bits("b0000"), pp(2)(67,4).asUInt), pp(3))
+    val level1_1_2 = Cat(level1_2,pp(2)(3,0))
+      printf("level1_1_2 %x",level1_1_2) 
+
+      level1_3 := seventeenDigitCLA (Cat(Bits("b0000"), pp(4)(67,4).asUInt), pp(5))
+    val level1_1_3 = Cat(level1_3,pp(4)(3,0))
+      printf("level1_1_3 %x",level1_1_3) 
+
+      level1_4 := seventeenDigitCLA (Cat(Bits("b0000"), pp(6)(67,4).asUInt), pp(7))
+    val level1_1_4 = Cat(level1_4,pp(6)(3,0))
+      printf("level1_1_4 %x",level1_1_4) 
+
+      level1_5 := seventeenDigitCLA (Cat(Bits("b0000"), pp(8)(67,4).asUInt), pp(9))
+    val level1_1_5 = Cat(level1_5,pp(8)(3,0))
+      printf("level1_1_5 %x",level1_1_5) 
+
+      level1_6 := seventeenDigitCLA (Cat(Bits("b0000"), pp(10)(67,4).asUInt), pp(11))
+    val level1_1_6 = Cat(level1_6,pp(10)(3,0))
+      printf("level1_1_6 %x",level1_1_6) 
+
+      level1_7 := seventeenDigitCLA (Cat(Bits("b0000"), pp(12)(67,4).asUInt), pp(13))
+    val level1_1_7 = Cat(level1_7,pp(12)(3,0))
+      printf("level1_1_7 %x",level1_1_7) 
+
+      level1_8 := seventeenDigitCLA (Cat(Bits("b0000"), pp(14)(67,4).asUInt), pp(15))
+    val level1_1_8 = Cat(level1_8,pp(14)(3,0))
+      printf("level1_1_8 %x",level1_1_8) 
+
+      //18-digit accumulation
+      level2_1 := eighteenDigitCLA (Cat(Bits("b00000000"), level1_1_1(71,8)), level1_1_2)
+    val level2_1_1 = Cat(level2_1,level1_1_1(7,0))
+      printf("level2_1_1 %x",level2_1_1) 
+      level2_2 := eighteenDigitCLA (Cat(Bits("b00000000"), level1_1_3(71,8)), level1_1_4)
+    val level2_1_2 = Cat(level2_2,level1_1_3(7,0))
+      printf("level2_1_2 %x",level2_1_2) 
+
+      level2_3 := eighteenDigitCLA (Cat(Bits("b00000000"), level1_1_5(71,8)), level1_1_6)
+    val level2_1_3 = Cat(level2_3,level1_1_5(7,0))
+      printf("level2_1_3 %x",level2_1_3) 
+
+      level2_4 := eighteenDigitCLA (Cat(Bits("b00000000"), level1_1_7(71,8)), level1_1_8)
+    val level2_1_4 = Cat(level2_4,level1_1_7(7,0))
+      printf("level2_1_4 %x",level2_1_4) 
+      // 20 digit accumulation 
+
+      level3_1 := twentyDigitCLA (Cat(Bits("b0000000000000000"), level2_1_1(79,16)), level2_1_2)
+    val level3_1_1 = Cat(level3_1,level2_1_1(15,0))
+      printf("level3_1_1 %x",level3_1_1) 
+
+      level3_2 := twentyDigitCLA (Cat(Bits("b0000000000000000"), level2_1_3(79,16)), level2_1_4)
+    val level3_1_2 = Cat(level3_2,level2_1_3(15,0))
+      printf("level3_1_2 %x",level3_1_2) 
+      // 24 digit final 
+
+      level4_1 := twentyfourDigitCLA (Cat( Bits("b0000_0000_0000_0000_0000_0000_0000_0000"), level3_1_1(95,32)), level3_1_2)
+      //val product = Cat(level4_1,level3_1_1(31,0))
+    val finalProduct = Cat(level4_1,level3_1_1(31,0))
+      printf("coefficeent multilicatio result is %x",finalProduct)
+      //printf("BCD prodcut is %x \n", product)
+    
+        regfile(addr) :=  finalProduct
+        //Method-2 Parallel component this mehotd recieve elevelt emement and return final product as BCD
+        //1//val BCD_Procuct = Wire(Bits(127.W))
+
+        printf("end BCD \n") 
+  
+  
+   ////regfile(addr) := wdata // write wadata accumulator // see datapath val accum = regfile(addr)//wdata is stte or MUX output  and  val wdata = Mux(doWrite, addend, accum + addend)
     //  regfile(addr):= BCDConv
+  
+  
+  
+  
+  
+  
+  
 
 }
 
