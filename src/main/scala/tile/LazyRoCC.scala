@@ -117,6 +117,11 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 }
 
 
+
+
+
+
+
     
  class  AccumulatorExample(opcodes: OpcodeSet, val n: Int = 4)(implicit p: Parameters) extends LazyRoCC(opcodes) {
 	  override lazy val module = new AccumulatorExampleModuleImp(this)
@@ -1075,12 +1080,26 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 
 	}//end doBCDmul
 
+//=====================MEMORY INTRFACE=========================================
+  
+  val _my_busy = Reg(init = {Bool(false)}) //initialize to false
+  val r_recv_max = Reg(UInt(width = xLen));
+  val r_cmd_count = Reg(UInt(width = xLen));
+  val r_recv_count = Reg(UInt(width = xLen));
+  val r_resp_rd = Reg(io.resp.bits.rd)
+  val r_addr = Reg(UInt(width = xLen))
+  // datapath
+  val r_total = Reg(UInt(width = xLen));
+  val r_tag = Reg(UInt(width = outer.n))//riaz add outer
+  val s_idle :: s_mem_acc :: s_finish :: Nil = Enum(Bits(), 3) //FSM
+  val r_cmd_state = Reg(UInt(width = 3), init = s_idle) // register withd 3 initail value S_idle
+  val r_recv_state = Reg(UInt(width = 3), init = s_idle)
+ 
 
 
 
 
-
-	  //=========================================================Taking pre compute form memory and genreat final product with rounding ==================
+	  //====================doAccumMul=====================================Taking pre compute form memory and genreat final product with rounding ==================
 	when (cmd.fire() && (doAccumMul)) 
 	{
 
@@ -1255,21 +1274,14 @@ trait HasLazyRoCCModule extends CanHavePTWModule
       //preCompute(9) :=seventeenDigitCLA(preCompute(8), Cat(Bits("b0000"),multiplicand_X))
       //printf("precom %x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n", preCompute(0), preCompute(1), preCompute(2), preCompute(3), preCompute(4), preCompute(5), preCompute(6) ,preCompute(7), preCompute(8),preCompute(9) )
 
-  //============Receiving data  multiplicand multiple from memory==========
   
-  val busy = Reg(init = {Bool(false)}) //initialize to false
-  val r_recv_max = Reg(UInt(width = xLen));
-  val r_cmd_count = Reg(UInt(width = xLen));
-  val r_recv_count = Reg(UInt(width = xLen));
-  val r_resp_rd = Reg(io.resp.bits.rd)
-  val r_addr = Reg(UInt(width = xLen))
-  // datapath
-  val r_total = Reg(UInt(width = xLen));
-  val r_tag = Reg(UInt(width = outer.n))//riaz add outer
-  val s_idle :: s_mem_acc :: s_finish :: Nil = Enum(Bits(), 3) //FSM
-  val r_cmd_state = Reg(UInt(width = 3), init = s_idle) // register withd 3 initail value S_idle
-  val r_recv_state = Reg(UInt(width = 3), init = s_idle)
-  //when (io.cmd.valid) {
+
+
+
+
+//======================================================================
+//============Receiving data  multiplicand multiple from memory==========
+ //when (io.cmd.valid) {
   //  printf("MemTotalExample: On Going. %x, %x\n", r_cmd_state, r_recv_state)
   //  }
   //when (io.cmd.fire()) {
@@ -1284,6 +1296,9 @@ trait HasLazyRoCCModule extends CanHavePTWModule
   r_cmd_state := s_mem_acc
   r_recv_state := s_mem_acc
   //}
+ // printf("Stage-1 after initialization  rs1x\n , rs2%x\n , rd%x\n ,  r-total %x\n , r-address %x\n ,r_recv-max  %x\n , r-recv-count %x\n , comand-count  %x\n ,tag  %x\n ,rd  %x\n ,state  %x\n",r_total,r_addr,r_recv_max,r_recv_count,r_cmd_count,r_tag,r_resp_rd,r_cmd_state,cmd.bits.rs1,cmd.bits.rs2,cmd.bits.rd)
+
+  
   io.cmd.ready := (r_cmd_state === s_idle)
   // command resolved if no stalls AND not issuing a load that will need a request
   val cmd_finished = r_cmd_count === r_recv_max
@@ -1294,6 +1309,10 @@ trait HasLazyRoCCModule extends CanHavePTWModule
   r_tag := r_tag + UInt(1)
   r_addr := r_addr + UInt(8)
   r_cmd_state := Mux(cmd_finished, s_idle, s_mem_acc)
+
+ printf("Stage-2 when star esmmac after initialization r-total %x\n , r-address %x\n ,r_recv-max  %x\n , r-recv-count %x\n , comand-count  %x\n ,tag  %x\n ,rd  %x\n ,state  %x\n",r_total,r_addr,r_recv_max,r_recv_count,r_cmd_count,r_tag,r_resp_rd,r_cmd_state)
+
+  
   }
   // MEMORY REQUEST INTERFACE (Load data form memory)
   io.mem.req.valid := (r_cmd_state === s_mem_acc)
@@ -1314,15 +1333,29 @@ trait HasLazyRoCCModule extends CanHavePTWModule
   r_recv_state := Mux(recv_finished, s_finish, s_mem_acc)
   printf("precom %x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n", preCompute(0), preCompute(1), preCompute(2), preCompute(3), preCompute(4), preCompute(5), preCompute(6) ,preCompute(7), preCompute(8),preCompute(9) )
 
+  printf("Stage-3 after initialization r-total %x\n , r-address %x\n ,r_recv-max  %x\n , r-recv-count %x\n , comand-count  %x\n ,tag  %x\n ,rd  %x\n ,state  %x\n",r_total,r_addr,r_recv_max,r_recv_count,r_cmd_count,r_tag,r_resp_rd,r_cmd_state)
+
+  
+
+
+  printf("precom %x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n", preCompute(0), preCompute(1), preCompute(2), preCompute(3), preCompute(4), preCompute(5), preCompute(6) ,preCompute(7), preCompute(8),preCompute(9) )
+
+ 
   }
 
   // control line
   when (io.mem.req.fire()) {
-  busy := Bool(true)
+  _my_busy := Bool(true)
   }
   when ((r_recv_state === s_finish) && io.resp.fire()) {
   r_recv_state := s_idle
   printf("MemTotalExample: Finished. Answer = %x\n", r_total)
+
+
+   printf("Stage-final after initialization r-total %x\n , r-address %x\n ,r_recv-max  %x\n , r-recv-count %x\n , comand-count  %x\n ,tag  %x\n ,rd  %x\n ,state  %x\n",r_total,r_addr,r_recv_max,r_recv_count,r_cmd_count,r_tag,r_resp_rd,r_cmd_state)
+
+  
+
   }
   
  // ---------------------
@@ -1858,93 +1891,19 @@ when (cmd.fire() && (doWrite || doAccum))
 
       // preCoumpute is the value of 1X to 9X This porcess use CLA siquentially
       // and generate . 
-      // val preCompute = Reg(Vec(10,Bits(68.W)))
-      // val pre1 = Wire(Bits(68.W))
-      //preCompute(0) := Bits("b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000")
-      //preCompute(1) := Cat(Bits("b0000"),multiplicand_X)
-      //preCompute(2) :=seventeenDigitCLA(preCompute(1), Cat(Bits("b0000"),multiplicand_X))
-      //preCompute(3) :=seventeenDigitCLA(preCompute(2), Cat(Bits("b0000"),multiplicand_X))
-      //preCompute(4) :=seventeenDigitCLA(preCompute(3), Cat(Bits("b0000"),multiplicand_X))
-      //preCompute(5) :=seventeenDigitCLA(preCompute(4), Cat(Bits("b0000"),multiplicand_X))
-      //preCompute(6) :=seventeenDigitCLA(preCompute(5), Cat(Bits("b0000"),multiplicand_X))
-      //preCompute(7) :=seventeenDigitCLA(preCompute(6), Cat(Bits("b0000"),multiplicand_X))
-      //preCompute(8) :=seventeenDigitCLA(preCompute(7), Cat(Bits("b0000"),multiplicand_X))
-      //preCompute(9) :=seventeenDigitCLA(preCompute(8), Cat(Bits("b0000"),multiplicand_X))
-      //printf("precom %x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n", preCompute(0), preCompute(1), preCompute(2), preCompute(3), preCompute(4), preCompute(5), preCompute(6) ,preCompute(7), preCompute(8),preCompute(9) )
-
-      //======================
-  
-  val busy = Reg(init = {Bool(false)}) //initialize to false
-  val r_recv_max = Reg(UInt(width = xLen));
-  val r_cmd_count = Reg(UInt(width = xLen));
-  val r_recv_count = Reg(UInt(width = xLen));
-  val r_resp_rd = Reg(io.resp.bits.rd)
-  val r_addr = Reg(UInt(width = xLen))
-  // datapath
-  val r_total = Reg(UInt(width = xLen));
-  val r_tag = Reg(UInt(width = outer.n))//riaz add outer
-  val s_idle :: s_mem_acc :: s_finish :: Nil = Enum(Bits(), 3) //FSM
-  val r_cmd_state = Reg(UInt(width = 3), init = s_idle) // register withd 3 initail value S_idle
-  val r_recv_state = Reg(UInt(width = 3), init = s_idle)
-  //when (io.cmd.valid) {
-  //  printf("MemTotalExample: On Going. %x, %x\n", r_cmd_state, r_recv_state)
-  //  }
-  //when (io.cmd.fire()) {
-  printf("Accum Mul: Command Received. %x, %x\n", io.cmd.bits.rs1, io.cmd.bits.rs2)
-  r_total := UInt(0)
-  r_addr := io.cmd.bits.rs1
-  r_recv_max := io.cmd.bits.rs2
-  r_recv_count := UInt(0)
-  r_cmd_count := UInt(0)
-  r_tag := UInt(0)
-  r_resp_rd := io.cmd.bits.inst.rd
-  r_cmd_state := s_mem_acc
-  r_recv_state := s_mem_acc
-  //}
-  io.cmd.ready := (r_cmd_state === s_idle)
-  // command resolved if no stalls AND not issuing a load that will need a request
-  val cmd_finished = r_cmd_count === r_recv_max
-  when ((r_cmd_state === s_mem_acc) && io.mem.req.fire()) 
-  {
-  printf("AccumMul: IO.MEM Command Received %x %x\n", io.mem.resp.bits.data, r_cmd_state)
-  r_cmd_count := r_cmd_count + UInt(1)
-  r_tag := r_tag + UInt(1)
-  r_addr := r_addr + UInt(8)
-  r_cmd_state := Mux(cmd_finished, s_idle, s_mem_acc)
-  }
-  // MEMORY REQUEST INTERFACE
-  io.mem.req.valid := (r_cmd_state === s_mem_acc)
-  io.mem.req.bits.addr := r_addr
-  io.mem.req.bits.tag := r_tag
-  io.mem.req.bits.cmd := M_XRD // perform a load (M_XWR for stores)
-  io.mem.req.bits.typ := MT_D // D = 8 bytes, W = 4, H = 2, B = 1
-  io.mem.req.bits.data := Bits(0) // we're not performing any stores...
-  io.mem.req.bits.phys := Bool(false)
- // io.mem.invalidate_lr := Bool(false)
-  val recv_finished = (r_recv_count === r_recv_max)
-  when (r_recv_state === s_mem_acc && io.mem.resp.valid) 
-  {
-  printf("Accum Mul: IO.MEM Received %x %x\n", io.mem.resp.bits.data, r_recv_state)
-  //r_total := r_total + io.mem.resp.bits.data
-  preCompute(r_recv_count)  :=  io.mem.resp.bits.data
-  r_recv_count := r_recv_count + UInt(1)
-  r_recv_state := Mux(recv_finished, s_finish, s_mem_acc)
-  printf("precom %x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n", preCompute(0), preCompute(1), preCompute(2), preCompute(3), preCompute(4), preCompute(5), preCompute(6) ,preCompute(7), preCompute(8),preCompute(9) )
-
-  }
-
-  // control line
-  when (io.mem.req.fire()) {
-  busy := Bool(true)
-  }
-  when ((r_recv_state === s_finish) && io.resp.fire()) {
-  r_recv_state := s_idle
-  printf("MemTotalExample: Finished. Answer = %x\n", r_total)
-  }
-  
- // ---------------------
-     //=================
-  
+       val preCompute = Reg(Vec(10,Bits(68.W)))
+       val pre1 = Wire(Bits(68.W))
+      preCompute(0) := Bits("b0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000_0000")
+      preCompute(1) := Cat(Bits("b0000"),multiplicand_X)
+      preCompute(2) :=seventeenDigitCLA(preCompute(1), Cat(Bits("b0000"),multiplicand_X))
+      preCompute(3) :=seventeenDigitCLA(preCompute(2), Cat(Bits("b0000"),multiplicand_X))
+      preCompute(4) :=seventeenDigitCLA(preCompute(3), Cat(Bits("b0000"),multiplicand_X))
+      preCompute(5) :=seventeenDigitCLA(preCompute(4), Cat(Bits("b0000"),multiplicand_X))
+      preCompute(6) :=seventeenDigitCLA(preCompute(5), Cat(Bits("b0000"),multiplicand_X))
+      preCompute(7) :=seventeenDigitCLA(preCompute(6), Cat(Bits("b0000"),multiplicand_X))
+      preCompute(8) :=seventeenDigitCLA(preCompute(7), Cat(Bits("b0000"),multiplicand_X))
+      preCompute(9) :=seventeenDigitCLA(preCompute(8), Cat(Bits("b0000"),multiplicand_X))
+      printf("precom %x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n", preCompute(0), preCompute(1), preCompute(2), preCompute(3), preCompute(4), preCompute(5), preCompute(6) ,preCompute(7), preCompute(8),preCompute(9) )
 
       pp(0) := preCompute(multiplier_Y(3,0))
       pp(1) := preCompute(multiplier_Y(7,4))
@@ -2050,6 +2009,10 @@ when (cmd.fire() && (doWrite || doAccum))
 
 }
 
+
+
+//=========================================================================
+
   when (io.mem.resp.valid) 
     {
    printf("Accumulator memory response : res %x\n", io.mem.resp.bits.data)
@@ -2097,6 +2060,401 @@ when (cmd.fire() && (doWrite || doAccum))
 }
 
 
+
+
+
+
+
+
+
+
+//======================================================================
+
+
+
+
+
+class  dot_AccumulatorExample(opcodes: OpcodeSet, val n: Int = 4)(implicit p: Parameters) extends LazyRoCC(opcodes) {
+  override lazy val module = new dot_AccumulatorExampleModuleImp(this)
+}
+
+class dot_AccumulatorExampleModuleImp(outer: dot_AccumulatorExample)(implicit p: Parameters) extends LazyRoCCModuleImp(outer)
+    with HasCoreParameters {
+
+
+  val mem_busy = RegInit(false.B)
+
+  val cmd = Queue(io.cmd)
+  val funct = cmd.bits.inst.funct
+  val doWrite = funct === UInt(0)
+  val doRead = funct === UInt(1)
+  val doLoad = funct === UInt(2)
+  val doAccum = funct === UInt(3)
+  val doClear = funct === UInt(4)
+  val doMMLoad = funct === UInt(6)
+  val doBCDtoDPD = funct === UInt(8)
+
+  // controlpath
+  val sIdle :: sLoad :: sWrite :: sAccum :: sClear :: sRead :: sBCDtoDPD :: sdoMMLoad:: Nil = Enum(8)
+  val state = RegInit(sIdle)
+
+  val arg1  = RegInit(Vec(Seq.fill(256)(0.U(8.W))))
+  val arg2  = RegInit(Vec(Seq.fill(256)(0.U(8.W))))
+  val multiplicandMultiple = RegInit(Vec(Seq.fill(9)(0.U(64.W))))
+  val arg_valid = RegInit(Vec(Seq.fill(256)(false.B)))
+  val dotP  = RegInit(0.U(16.W))
+  val BCDtoDPD = RegInit(0.U(64.W))
+  val mem_addr = Reg(UInt(width = xLen))
+  val idx   = RegInit(0.U(32.W))
+  val arg_count = RegInit(0.U(32.W))
+  val _arg_count = RegInit(0.U(8.W))
+  val addend = cmd.bits.rs1
+  //st->state 
+  val stallLoad = (!io.mem.req.ready || (state === sLoad) || (state === sWrite))
+  val stallResp = !io.resp.ready && cmd.bits.inst.xd
+  val stallComp = ((state === sAccum) || (state === sClear))
+
+  cmd.ready := !stallLoad && !stallResp && !stallComp
+
+  io.resp.valid := cmd.valid && !stallResp && !stallLoad && (state === sIdle)
+  io.resp.bits.rd := cmd.bits.inst.rd
+  io.resp.bits.data := dotP
+ // io.resp.bits.data := BCDtoDPD
+  io.busy := cmd.valid
+  io.interrupt := Bool(false)
+
+  // State Logic - Load and Write Initialization
+  when(cmd.fire() && (state === sIdle)) {
+    when(doLoad) {
+      state     := sLoad
+      mem_addr  := cmd.bits.rs1
+      arg_count := cmd.bits.rs2
+      printf(" riaz Now state DoLoad %x\n,%x\n",mem_addr,arg_count)
+    } .elsewhen(doWrite) {
+      state     := sWrite
+      mem_addr  := cmd.bits.rs1
+      arg_count := cmd.bits.rs2
+      printf(" riaz Now stare doWrite  %x\n,%x\n",mem_addr,arg_count)
+    } .elsewhen(doAccum) {
+      state := sAccum
+      printf("Now state doAccum")
+    } .elsewhen(doClear) {
+      state := sClear
+    } .elsewhen(doRead) {
+      printf("Now state doRead dotP = %d\n",dotP)
+    }.elsewhen(doBCDtoDPD) {
+      state := sBCDtoDPD
+      printf("Now state riaz DPD")
+    }.elsewhen(doMMLoad) {
+      state     := sdoMMLoad
+      mem_addr  := cmd.bits.rs1
+      _arg_count := cmd.bits.rs2
+      printf(" riaz Now state DoMMLoad %x\n,%x\n",mem_addr,arg_count)
+    } 
+
+  }
+  val products = Wire(Vec(256, UInt(16.W)))
+  for(i <- 0 until 256) {
+    products(i) := arg1(i) * arg2(i)
+  }
+
+  
+   for(i <- 0 until 9) {
+      multiplicandMultiple(i) := arg1(i)
+  }
+   /*
+  for ( i <- 0 until 9){
+       printf(" multiplicand Multiple are %x \n ",multiplicandMultiple(i))
+  }
+  */
+  val adder_idx = RegInit(0.U(32.W))
+
+  when (state === sAccum && adder_idx < arg_count) {
+      when(arg_valid(adder_idx)) {
+        printf("arg1(%d) = %d, arg2(%d) = %d, arg_valid(%d) = %b\n",idx,arg1(idx),idx, arg2(idx),idx,arg_valid(idx))
+        dotP := dotP + (products(adder_idx))
+        printf("dotP riaz  = %d\n", dotP)
+        adder_idx := adder_idx + 1.U
+    }
+  } .elsewhen(state === sAccum && adder_idx >= arg_count) {
+    adder_idx := 0.U
+    state := sIdle
+  }
+
+  //++++++++++++++doMMLoad(6)+++++++++++++++++++++++++++++++
+
+  val _adder_idx = RegInit(0.U(8.W))
+  val mm = RegInit(Vec(Seq.fill(9)(0.U(64.W))))
+
+  when (state === sAccum && _adder_idx < _arg_count) {
+      when(arg_valid(_adder_idx)) {
+        printf("start reading form Memory")
+       // printf("Multiplicand Multiple (%d) = %d, arg_valid(%d) = %b\n",idx,multiplicandMultiple(idx),idx,idx,arg_valid(idx))
+       // dotP := dotP + (multiplicandMultiple(adder_idx))
+      // val mm(_adder_idx) := multiplicandMultiple(_adder_idx)
+       // printf("MM riaz %x \n",  mm(_adder_idx) )
+        _adder_idx := _adder_idx + 1.U
+    }
+  } .elsewhen(state === sAccum && _adder_idx >= _arg_count) {
+    _adder_idx := 0.U
+    state := sIdle
+  }
+
+
+
+  //---------------doAccumMul(6)++++++++++++++++++++++++++++++
+
+
+
+
+
+  when (state === sClear) {
+    dotP      := 0.U
+    arg1      := Vec(Seq.fill(256)(0.U(8.W)))
+    arg2      := Vec(Seq.fill(256)(0.U(8.W)))
+    arg_valid := Vec(Seq.fill(256)(false.B))
+    arg_count := 0.U
+    idx       := 0.U
+    mem_addr  := 0.U
+    BCDtoDPD  := 0.U
+    arg_count := 0.U
+    state     := sIdle
+    
+  }
+
+  //++++++++++++++++++++++++++++++++++++++++++++++++
+  //++++++++++++doBCDtoDPD(8)-start+++++++++++++++++
+  //++++++++++++++++++++++++++++++++++++++++++++++++
+
+    val DPD_cnt = RegInit(0.U(8.W))
+
+  when(state===sBCDtoDPD && DPD_cnt === 0.U) 
+   // when(cmd.fire() && (doBCDtoDPD))
+	{
+
+	printf(" state check doWrite, doRed, doLoad, doAccum, doclear, doBCD  %x, %x, %x, %x, %x, %x, \n",  doWrite, doRead,doLoad,doAccum, doClear,doBCDtoDPD)
+	printf("RS1(data), RS2(data) %x,%x\n", cmd.bits.rs1, cmd.bits.rs2)
+        printf("instruction xs1, xs2, xd %x, %x,%x \n  ", cmd.bits.inst.xs1, cmd.bits.inst.xs2, cmd.bits.inst.xd)
+
+
+	 printf("RoCC rocc ROCC doBCDtoDPD value of funct in 8\n")
+	 printf("BCD to DPD conversion start input 60 output 50\n")
+	 def encoding_BCDtoDPD (a_val:Bits):UInt  =
+	    {
+	      val in = Wire (Bits(12.W))
+ 	      val a,b,c,d,e,f,g,h,i,j,k,m = Wire(Bits(1.W))
+	      val s = Wire(Vec(10,Bool()))
+	      
+	     in := a_val
+
+	     a := in(11) //LSB
+	     b := in(10)
+	     c := in(9)
+	     d := in(8)
+	     e := in(7)
+	     f := in(6)
+	     g := in(5)
+	     h := in(4)
+	     i := in(3)
+	     j := in(2)
+	     k := in(1)
+	     m := in(0)
+
+
+	     s(9) := (a & f & i) | (a & j) | b 
+	     s(8) := (a & g & i) | (a & k) | c
+	     s(7) := d
+	     s(6) := (~a & e & j) | (f & ~i) | (~a & f) | (e & i)
+	     s(5) := (~a & e & k) | (a & i) | g
+	     s(4) := h
+	     s(3) := a | e | i
+	     s(2) := (~e & j) | (e & i) | a
+	     s(1) := (~a & k) | (a & i) | e
+	     s(0) := m
+             
+	     printf("  binary in  %b, binary out %b \n",in.asUInt,s.asUInt)
+
+	     return s.asUInt
+	  }
+
+	def sixtyfourbit (a_val:Bits) :UInt=
+	  {
+	    val in = Wire (Bits(60.W))
+	    val sum = Wire(Bits(50.W))
+            in := a_val
+	    val sumdpd = Reg(Vec(5,Bits(10.W)))
+
+	      sumdpd(0)  :=     encoding_BCDtoDPD (in(11,0))
+              sumdpd(1)  :=     encoding_BCDtoDPD (in(23,12))
+              sumdpd(2)  :=     encoding_BCDtoDPD (in(35,24))
+              sumdpd(3)  :=     encoding_BCDtoDPD (in(47,36))
+              sumdpd(4)  :=     encoding_BCDtoDPD (in(59,48))
+             
+             printf("%b DPD ",sumdpd.asUInt)
+
+	     return (sumdpd.asUInt)
+	  }
+
+
+             
+         val BCD_Value =  sixtyfourbit (cmd.bits.rs1)
+	// regfile(addr) :=  Cat(Cat(Bits("b00000000000000"),BCD_Value)) 
+         printf("DCD to DPD Final xd wirte reg value = %x, result = %x \n", cmd.bits.rs1, Cat(Bits("b00000000000000"),BCD_Value))
+           BCDtoDPD:= Cat(Cat(Bits("b00000000000000"),BCD_Value)) 
+                 
+            DPD_cnt := 2.U  
+
+	}.elsewhen(state === sAccum && DPD_cnt >= 1.U) {
+	    _adder_idx := 0.U
+	    state := sIdle
+            printf("Example BCDtoDPS Finish")
+       }
+
+
+
+  //---------------------------------------------------------
+  //-------------doBCDtoDPD(8)-end---------------------------
+  //----------------------------------------------------------
+
+
+
+
+
+   val load_done = (idx >= arg_count)
+
+  // State Logic - Sending read requests to memory
+  io.mem.req.bits.addr  := mem_addr
+  io.mem.req.bits.tag   := mem_addr
+  io.mem.req.bits.cmd   := M_XRD
+  io.mem.req.bits.typ   := MT_B
+  io.mem.req.bits.data  := Bits(0)
+  io.mem.req.valid      := !stallResp && !mem_busy && (state === sLoad || state === sWrite) && !load_done
+
+  // State Logic - Handling data read from memory
+  when(state === sLoad && load_done) {
+    state := sIdle
+    idx   := 0.U
+    printf("load done\n")
+  } .elsewhen(state === sLoad && io.mem.resp.valid) {
+    printf("loaded one\n")
+    arg1(idx)       := io.mem.resp.bits.data
+    multiplicandMultiple(idx):= io.mem.resp.bits.data
+    arg_valid(idx)  := true.B
+    idx             := idx + 1.U
+    mem_busy        := false.B
+    mem_addr        := mem_addr + 1.U
+  }
+
+  when(state === sWrite && load_done) {
+    state := sIdle
+    idx   := 0.U
+    printf("write done\n")
+  } .elsewhen(state === sWrite && io.mem.resp.valid) {
+    printf("written\n")
+    arg2(idx)       := io.mem.resp.bits.data
+    arg_valid(idx)  := true.B
+    idx             := idx + 1.U
+    mem_busy        := false.B
+    mem_addr        := mem_addr + 1.U
+    printf("%b, %d, %d\n",load_done, arg_count, idx)
+  }
+
+  /*
+  when(io.mem.resp.valid) {
+    when(state === sLoad) {
+      arg1(idx)       := io.mem.resp.bits.data
+      arg_valid(idx)  := true.B
+      idx := idx + 1.U
+      mem_busy := false.B
+      when(load_done) {
+        state := sIdle
+        idx   := 0.U
+      }.otherwise {
+        mem_addr := mem_addr + 1.U
+      }
+    } .elsewhen(state === sWrite) {
+      arg2(idx)       := io.mem.resp.bits.data
+      arg_valid(idx)  := true.B
+      idx := idx + 1.U
+      mem_busy := false.B
+      when(load_done) {
+        state := sIdle
+        idx   := 0.U
+      } .otherwise {
+        mem_addr := mem_addr + 1.U
+      }
+    }
+  }
+  */
+  // Memory Controller
+  when(io.mem.req.fire()) {
+    mem_busy := true.B
+  }
+  // datapath
+/*
+  val arg1  = RegInit(Vec(Seq.fill(n)(0.U(32.W))))
+  val arg2  = RegInit(Vec(Seq.fill(n)(0.U(32.W))))
+  val dotP  = RegInit(0.U)
+  val mem_addr = Reg(UInt(width = xLen))
+  val addend = cmd.bits.rs1
+  val wdata = arg1 * arg2
+  val route_mem = RegInit(false.B)
+  when (cmd.fire() && doAccum) {
+    dotP := dotP + wdata
+  }
+  when (cmd.fire() && doClear) {
+    dotP := 0.U
+    arg1 := 0.U
+    arg2 := 0.U
+  }
+  when (cmd.fire() && doWrite) {
+    route_mem := true.B
+  }
+  when (io.mem.resp.valid) {
+    when (route_mem) {
+      arg2 := io.mem.resp.bits.data
+      route_mem := false.B
+    } .otherwise {
+    arg1 := io.mem.resp.bits.data
+    }
+    busy(memRespTag) := Bool(false)
+  }
+  // control
+  when (io.mem.req.fire()) {
+    busy(addr) := Bool(true)
+  }
+  val doResp = cmd.bits.inst.xd
+  val stallReg = busy(addr)
+  val stallLoad = (doWrite || doLoad) && !io.mem.req.ready
+  val stallResp = doResp && !io.resp.ready
+  cmd.ready := !stallReg && !stallLoad && !stallResp
+    // command resolved if no stalls AND not issuing a load that will need a request
+  // PROC RESPONSE INTERFACE
+  io.resp.valid := cmd.valid && doResp && !stallReg && !stallLoad
+    // valid response if valid command, need a response, and no stalls
+  io.resp.bits.rd := cmd.bits.inst.rd
+    // Must respond with the appropriate tag or undefined behavior
+  io.resp.bits.data := dotP
+    // Semantics is to always send out prior accumulator register value
+  io.busy := cmd.valid || busy.reduce(_||_)
+    // Be busy when have pending memory requests or committed possibility of pending requests
+  io.interrupt := Bool(false)
+    // Set this true to trigger an interrupt on the processor (please refer to supervisor documentation)
+  // MEMORY REQUEST INTERFACE
+  io.mem.req.valid := cmd.valid && (doLoad || doWrite) && !stallReg && !stallResp
+  io.mem.req.bits.addr := addend
+  io.mem.req.bits.tag := addr
+  io.mem.req.bits.cmd := M_XRD // perform a load (M_XWR for stores)
+  io.mem.req.bits.typ := MT_D // D = 8 bytes, W = 4, H = 2, B = 1
+  io.mem.req.bits.data := Bits(0) // we're not performing any stores...
+  io.mem.req.bits.phys := Bool(false)
+*/
+}
+
+
+
+
+//======================================================================
 
 
 
@@ -2321,14 +2679,14 @@ class CharacterCountExampleModuleImp(outer: CharacterCountExample)(implicit p: P
 
 
 
-
- 
-
 class MemTotalExample(opcodes: OpcodeSet, val n: Int = 4)(implicit p: Parameters) extends LazyRoCC(opcodes) {
   override lazy val module = new MemTotalExampleModule(this)
 }
 class MemTotalExampleModule(outer: MemTotalExample)(implicit p: Parameters) extends LazyRoCCModuleImp(outer)
 with HasCoreParameters {
+
+
+
   val busy = Reg(init = {Bool(false)}) //initialize to false
   val r_recv_max = Reg(UInt(width = xLen));
   val r_cmd_count = Reg(UInt(width = xLen));
