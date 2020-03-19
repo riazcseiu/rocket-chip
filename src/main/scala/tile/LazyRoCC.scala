@@ -123,12 +123,12 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 
 
     
- class  AccumulatorExample(opcodes: OpcodeSet, val n: Int = 4)(implicit p: Parameters) extends LazyRoCC(opcodes) {
-	  override lazy val module = new AccumulatorExampleModuleImp(this)
+ class  dec_AccumulatorExample(opcodes: OpcodeSet, val n: Int = 4)(implicit p: Parameters) extends LazyRoCC(opcodes) {
+	  override lazy val module = new dec_AccumulatorExampleModuleImp(this)
 	}   
 
 
-	class AccumulatorExampleModuleImp(outer: AccumulatorExample)(implicit p: Parameters) extends LazyRoCCModuleImp(outer)
+	class dec_AccumulatorExampleModuleImp(outer: dec_AccumulatorExample)(implicit p: Parameters) extends LazyRoCCModuleImp(outer)
 	    with HasCoreParameters {
 	  
 	  val regfile = Mem(outer.n, UInt(width = xLen)) //Mem(4,64)
@@ -1296,7 +1296,7 @@ trait HasLazyRoCCModule extends CanHavePTWModule
   r_cmd_state := s_mem_acc
   r_recv_state := s_mem_acc
   //}
- // printf("Stage-1 after initialization  rs1x\n , rs2%x\n , rd%x\n ,  r-total %x\n , r-address %x\n ,r_recv-max  %x\n , r-recv-count %x\n , comand-count  %x\n ,tag  %x\n ,rd  %x\n ,state  %x\n",r_total,r_addr,r_recv_max,r_recv_count,r_cmd_count,r_tag,r_resp_rd,r_cmd_state,cmd.bits.rs1,cmd.bits.rs2,cmd.bits.rd)
+  //printf("Stage-1 after initialization  rs1x\n , rs2%x\n , rd%x\n ,  r-total %x\n , r-address %x\n ,r_recv-max  %x\n , r-recv-count %x\n , comand-count  %x\n ,tag  %x\n ,rd  %x\n ,state  %x\n",r_total,r_addr,r_recv_max,r_recv_count,r_cmd_count,r_tag,r_resp_rd,r_cmd_state,cmd.bits.rs1,cmd.bits.rs2,cmd.bits.rd)
 
   
   io.cmd.ready := (r_cmd_state === s_idle)
@@ -2074,11 +2074,11 @@ when (cmd.fire() && (doWrite || doAccum))
 
 
 
-class  dot_AccumulatorExample(opcodes: OpcodeSet, val n: Int = 4)(implicit p: Parameters) extends LazyRoCC(opcodes) {
-  override lazy val module = new dot_AccumulatorExampleModuleImp(this)
+class  dec_new_AccumulatorExample(opcodes: OpcodeSet, val n: Int = 4)(implicit p: Parameters) extends LazyRoCC(opcodes) {
+  override lazy val module = new dec_new_AccumulatorExampleModuleImp(this)
 }
 
-class dot_AccumulatorExampleModuleImp(outer: dot_AccumulatorExample)(implicit p: Parameters) extends LazyRoCCModuleImp(outer)
+class dec_new_AccumulatorExampleModuleImp(outer: dec_new_AccumulatorExample)(implicit p: Parameters) extends LazyRoCCModuleImp(outer)
     with HasCoreParameters {
 
 
@@ -2104,6 +2104,9 @@ class dot_AccumulatorExampleModuleImp(outer: dot_AccumulatorExample)(implicit p:
   val arg_valid = RegInit(Vec(Seq.fill(256)(false.B)))
   val dotP  = RegInit(0.U(16.W))
   val BCDtoDPD = RegInit(0.U(64.W))
+  val DPD_in = RegInit(0.U(64.W))
+  val BCD_in = RegInit(0.U(64.W))
+
   val mem_addr = Reg(UInt(width = xLen))
   val idx   = RegInit(0.U(32.W))
   val arg_count = RegInit(0.U(32.W))
@@ -2118,8 +2121,8 @@ class dot_AccumulatorExampleModuleImp(outer: dot_AccumulatorExample)(implicit p:
 
   io.resp.valid := cmd.valid && !stallResp && !stallLoad && (state === sIdle)
   io.resp.bits.rd := cmd.bits.inst.rd
-  io.resp.bits.data := dotP
- // io.resp.bits.data := BCDtoDPD
+ // io.resp.bits.data := dotP
+ io.resp.bits.data := BCDtoDPD
   io.busy := cmd.valid
   io.interrupt := Bool(false)
 
@@ -2144,6 +2147,9 @@ class dot_AccumulatorExampleModuleImp(outer: dot_AccumulatorExample)(implicit p:
       printf("Now state doRead dotP = %d\n",dotP)
     }.elsewhen(doBCDtoDPD) {
       state := sBCDtoDPD
+      DPD_in  := cmd.bits.rs1
+      BCD_in := cmd.bits.rs2
+
       printf("Now state riaz DPD")
     }.elsewhen(doMMLoad) {
       state     := sdoMMLoad
@@ -2218,6 +2224,8 @@ class dot_AccumulatorExampleModuleImp(outer: dot_AccumulatorExample)(implicit p:
     mem_addr  := 0.U
     BCDtoDPD  := 0.U
     arg_count := 0.U
+    DPD_in    := 0.U
+    BCD_in    := 0.U
     state     := sIdle
     
   }
@@ -2235,6 +2243,9 @@ class dot_AccumulatorExampleModuleImp(outer: dot_AccumulatorExample)(implicit p:
 	printf(" state check doWrite, doRed, doLoad, doAccum, doclear, doBCD  %x, %x, %x, %x, %x, %x, \n",  doWrite, doRead,doLoad,doAccum, doClear,doBCDtoDPD)
 	printf("RS1(data), RS2(data) %x,%x\n", cmd.bits.rs1, cmd.bits.rs2)
         printf("instruction xs1, xs2, xd %x, %x,%x \n  ", cmd.bits.inst.xs1, cmd.bits.inst.xs2, cmd.bits.inst.xd)
+
+         printf("instruction rs1 %x, rs2  %x \n  ", DPD_in, BCD_in)
+
 
 
 	 printf("RoCC rocc ROCC doBCDtoDPD value of funct in 8\n")
@@ -2290,16 +2301,17 @@ class dot_AccumulatorExampleModuleImp(outer: dot_AccumulatorExample)(implicit p:
               sumdpd(3)  :=     encoding_BCDtoDPD (in(47,36))
               sumdpd(4)  :=     encoding_BCDtoDPD (in(59,48))
              
-             printf("%b DPD ",sumdpd.asUInt)
+             printf("The final result in(BCD), out(DPD)  %x  %x ",in.asUInt, sumdpd.asUInt)
 
 	     return (sumdpd.asUInt)
 	  }
 
 
              
-         val BCD_Value =  sixtyfourbit (cmd.bits.rs1)
-	// regfile(addr) :=  Cat(Cat(Bits("b00000000000000"),BCD_Value)) 
-         printf("DCD to DPD Final xd wirte reg value = %x, result = %x \n", cmd.bits.rs1, Cat(Bits("b00000000000000"),BCD_Value))
+           // val BCD_Value =  sixtyfourbit (cmd.bits.rs1)
+           val BCD_Value =  sixtyfourbit (BCD_in)
+           // regfile(addr) :=  Cat(Cat(Bits("b00000000000000"),BCD_Value)) 
+         printf("DCD to DPD Final xd wirte reg value = %x, result = %x \n",BCD_in, Cat(Bits("b00000000000000"),BCD_Value))
            BCDtoDPD:= Cat(Cat(Bits("b00000000000000"),BCD_Value)) 
                  
             DPD_cnt := 2.U  
