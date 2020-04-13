@@ -806,11 +806,9 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 	  
 	      multiplicand_X :=cmd.bits.rs1
 	      multiplier_Y := cmd.bits.rs2
-	      // val product_R = RegInit(0.U)
-	      //  val cin= Reg(UInt(width=1))
 	      //print debuging perpuse
-	      printf("address rs1, rs2, rd %x, %x, %x \n",   multiplicand_X  ,  cmd.bits.inst.rs2, cmd.bits.inst.rd)
-	      printf(" state check doWrite, doRed, doLoad, doAccum, doBCD,Doconvert,domul %x, %x, %x, %x, %x, %x, %x \n",  doWrite, doRead,doLoad,doAccum, doBCDadd,doConvert,doBCDmul)
+	      printf("BCD Multiplication start X = , Y =, rs1(10)= ,rs2(11)= , rd(12)=   %x \n, %x \n, %x \n, %x \n, %x \n",   multiplicand_X, multiplier_Y,cmd.bits.inst.rs1, cmd.bits.inst.rs2, cmd.bits.inst.rd)
+	      printf(" state check doWrite, doRed, doLoad, doAccum, doBCD, Doconvert, doBVDmul(1) %x, %x, %x, %x, %x, %x, %x \n",  doWrite, doRead,doLoad,doAccum, doBCDadd,doConvert,doBCDmul)
 	      printf("Xd, AddrsRs1, Address RS2, RS1(data), RS2(data) %x , %x, %x,%x,%x\n", cmd.bits.inst.xd, cmd.bits.inst.xs1,cmd.bits.inst.xd, addi,addend)
 	   
 	   // decimal one digit CLA it takes one BCD digit with 1 bit carry and returen 4 bit sum and one bit carry
@@ -883,25 +881,25 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 		  pdigit := h(3) & h(2) & h(1) & h(0)
 		  val c = "b0000".U(4.W)
 		  cout := gdigit | ( pdigit & cin ) 
-		  printf("---CLA START---\n")
-		  printf("cin %x\n",cin)
+		 // printf("---CLA START---\n")
+		 // printf("cin %x\n",cin)
 		  s (0) := h (0) ^ c(0) 
-		  printf("s0 %x\n",s(0).asUInt)
+		 // printf("s0 %x\n",s(0).asUInt)
 
 	  
 
 
 		  s(1) := ~cout &( p(3)&( p(2)&p(1) | p(2)&g(0) | p(2)&p(0)&cin | p(1)&g(0) | p(1)&p(0)&cin ) | g(2)&g(1) | p(2)&g(1)&p(0)&cin | ~s(3)&( p(2) | p(1) | g(0) | p(0)&cin ) )| g(3)&g(1)&( g(0) | p(0)&cin ) | cout& ~s(3)& ~( cin&pdigit | h(3)&h(2)&h(1)&g(0) | h(3)&h(2)&g(1)& ~p(0) | h(3)&g(2)&h(1)& ~p(0) | g(3)& ~p(2) | ~cin & h(3) & h(2) & g(1) & h(0) | ~cin & h(3)&g(2)&h(1) | ~cin&g(3)&h(2)& ~p(1)&h(0) )
-	  printf("s1 %x\n",s(1).asUInt)
+	 // printf("s1 %x\n",s(1).asUInt)
 
 		  s(2) := ~cout&(p(3)&p(2) | p(3)&p(1) | p(3)&g(0) | p(3)&p(0)&cin | p(2)& ~p(0)& ~cin | p(2)&g(1) | p(2)&p(0)&cin | g(1)&(g(0) | p(0)&cin | ~p(0)& ~cin) | p(1)&(g(0)& ~cin | h(0)&cin)) | cout&( ~cin&g(3)&(p(1)&g(0) | p(1)& ~p(0) | g(2)&g(0)) | cin&(g(2)&g(1)&h(0) | g(3)&p(1)&h(0) | g(3)&g(2)&h(0)) | g(3)&g(1) | g(3)&g(2)&p(1)&g(0) | g(3)&g(2)&p(1)&p(0)&cin )
 	       
-	      printf("s2 %x\n",s(2).asUInt)
+	    //  printf("s2 %x\n",s(2).asUInt)
 
 		  s(3) := ~cout&(p(2) | p(2)&g(1) | p(2)&p(0) | p(2)&cin | g(1)&p(0) | g(1)&cin | p(1)&g(0)&cin) | g(3)&(g(1) | p(1)&g(2)&(p(0)|cin) | g(2)&g(0)&cin | p(2)&p(1)&g(0)&cin)
-		  printf("s3 %x\n",s(3).asUInt)
-		  printf("CLA RESULT a b cin sum carry ,%x,%x,%x,%x, %x\n",a,b, cin,s.asUInt , cout.asUInt)
-		  printf("-----CLA END------")
+		 // printf("s3 %x\n",s(3).asUInt)
+		 // printf("CLA RESULT a b cin sum carry ,%x,%x,%x,%x, %x\n",a,b, cin,s.asUInt , cout.asUInt)
+		 // printf("-----CLA END------")
 	      return (s.asUInt,cout.asUInt)
 
 	    }
@@ -938,7 +936,7 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 		val(sum17,carry17) =  CLA (a(67,64),  b(67,64),carry16)
 		  // sum := Cat(sum1,sum2 ,sum3,sum4,sum5,sum6,sum7,sum8,sum9,sum10,sum11,sum12,sum13,sum14,sum15,sum16,sum17)
 		  sum := Cat(sum17,sum16,sum15,sum14,sum13,sum12,sum11,sum10,sum9,sum8,sum7,sum6,sum5,sum4,sum3,sum2,sum1)
-		  printf(" sum 1-17 are %x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n",sum1,sum2 ,sum3,sum4,sum5,sum6,sum7,sum8,sum9,sum10,sum11,sum12,sum13,sum14,sum15,sum16,sum17)
+		 // printf(" sum 1-17 are %x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n",sum1,sum2 ,sum3,sum4,sum5,sum6,sum7,sum8,sum9,sum10,sum11,sum12,sum13,sum14,sum15,sum16,sum17)
 		  printf("Seventeen Degit Adder OUTPUT %x, %x, %x \n", a,b,sum)
 	      return (sum.asUInt)
 	      //sum16._1.asUInt.asBool
@@ -989,7 +987,7 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 	      val(sum19,carry19) = CLA (a(75,72),   b(75,72),carry18)
 	      val(sum20,carry20) = CLA (a(79,76),   b(79,76),carry19)
 		sum := Cat(sum20,sum19,sum18,sum17,sum16,sum15,sum14,sum13,sum12,sum11,sum10,sum9,sum8,sum7,sum6,sum5,sum4,sum3,sum2,sum1)
-		printf(" sum 1-20 are %x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n",sum1,sum2 ,sum3,sum4,sum5,sum6,sum7,sum8,sum9,sum10,sum11,sum12,sum13,sum14,sum15,sum16,sum17,sum18,sum19,sum20)
+	//	printf(" sum 1-20 are %x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n",sum1,sum2 ,sum3,sum4,sum5,sum6,sum7,sum8,sum9,sum10,sum11,sum12,sum13,sum14,sum15,sum16,sum17,sum18,sum19,sum20)
 		// val sum = Cat(sum1,sum2._1,sum3._1,sum4._1)
 		//al sum = Cat(sum4._1,sum3._1,sum2._1,sum1)
 	      return (sum.asUInt)
@@ -1026,7 +1024,7 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 	      preCompute(7) :=seventeenDigitCLA(preCompute(6), Cat(Bits("b0000"),multiplicand_X))
 	      preCompute(8) :=seventeenDigitCLA(preCompute(7), Cat(Bits("b0000"),multiplicand_X))
 	      preCompute(9) :=seventeenDigitCLA(preCompute(8), Cat(Bits("b0000"),multiplicand_X))
-	      printf("precom %x,%x,%x,%x,%x,%x,%x,%x,%x,%x\n", preCompute(0), preCompute(1), preCompute(2), preCompute(3), preCompute(4), preCompute(5), preCompute(6) ,preCompute(7), preCompute(8),preCompute(9) )
+	      printf("precom %x \n,%x \n,%x \n,%x \n,%x \n,%x \n,%x \n,%x \n,%x \n, %x \n", preCompute(0), preCompute(1), preCompute(2), preCompute(3), preCompute(4), preCompute(5), preCompute(6) ,preCompute(7), preCompute(8),preCompute(9) )
 
 	      /*
 	      for (i<-0 until 8) {
@@ -1046,10 +1044,10 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 	      //  thirtytwozero := Bits("b0000_0000_0000_0000_0000_0000_0000_0000")
 	      /*
 
-	    printf("cat test")
-	    printf("4-8 %x\n",Cat(fourzero,eightzero))
-	    printf("8-4 %x\n",Cat(eightzero,fourzero))
-	    printf("8-4-4 %x\n",Cat(eightzero,fourzero,fourzero))
+	   // printf("cat test")
+	   // printf("4-8 %x\n",Cat(fourzero,eightzero))
+	   // printf("8-4 %x\n",Cat(eightzero,fourzero))
+	   // printf("8-4-4 %x\n",Cat(eightzero,fourzero,fourzero))
 
 
 	    val aH = Reg(Bits(width = 8))
@@ -1059,9 +1057,9 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 	    aH := Bits("b0000_1000")//0x8//b0000_1000
 	    aL:= Bits("b1000_0001")//0x81//b1000_0001
 	    A := Cat(aH ,(Cat(aL,aH))) // 0000_1000_1000_0001_0000_1000
-	    printf("aH-aL %x\n",A)
+	   // printf("aH-aL %x\n",A)
 	    A1 := Cat(aH(7,4),aL(3,0))
-	    printf("after A1 %x\n",A1)
+	   // printf("after A1 %x\n",A1)
 	    */
 	    // here generate partial product based on digit of multi9plier    
 	    //   val pp = Reg(Vec(16,Bits(68.W)))
@@ -1082,7 +1080,7 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 	      pp(13) := preCompute(multiplier_Y(55,52))
 	      pp(14) := preCompute(multiplier_Y(59,56))
 	      pp(15) := preCompute(multiplier_Y(63,60))
-	      printf("pp0-pp14 %x,\n %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n, %x\n,%x\n,%x\n",pp(0),pp(1),pp(2),pp(3),pp(4),pp(5),pp(6),pp(7),pp(8),pp(9),pp(10),pp(11),pp(12),pp(13),pp(14),pp(15))
+	      printf("All Persial Products are  pp0-pp14 1(%x=)- %x,\n 2(%x=) %x\n, 3(%x=), %x\n, 4 %x\n, 5 %x\n,6 %x\n,7 %x\n,8 %x\n,9 %x\n,10 %x\n,11 %x\n,12 %x\n,13 %x\n,14 %x\n,15 %x\n,16 %x\n", multiplier_Y(3,0), pp(0), multiplier_Y(7,4), multiplier_Y(11,8),  pp(1),pp(2),pp(3),pp(4),pp(5),pp(6),pp(7),pp(8),pp(9),pp(10),pp(11),pp(12),pp(13),pp(14),pp(15))
 
 	    val level1_1, level1_2, level1_3, level1_4, level1_5, level1_6, level1_7, level1_8 = Wire(Bits(68.W))
 	    val level2_1, level2_2, level2_3, level2_4                                         = Wire(Bits(72.W))
@@ -1153,7 +1151,7 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 	    val finalProduct = Cat(level4_1,level3_1_1(31,0))
 	      printf("coefficeent multilicatio result is %x",finalProduct)
 	      //printf("BCD prodcut is %x \n", product)
-		 regfile(addr) :=  finalProduct
+	      regfile(addr) :=  finalProduct
 		//Method-2 Parallel component this mehotd recieve elevelt emement and return final product as BCD
 		//1//val BCD_Procuct = Wire(Bits(127.W))
 
@@ -2594,11 +2592,11 @@ class dec_new_AccumulatorExampleModuleImp(outer: dec_new_AccumulatorExample)(imp
 
 
 //mem_totla inside
-class  TranslatorExample(opcodes: OpcodeSet)(implicit p: Parameters) extends LazyRoCC(opcodes, nPTWPorts = 1) {
-  override lazy val module = new TranslatorExampleModuleImp(this)
+class  _TranslatorExample(opcodes: OpcodeSet)(implicit p: Parameters) extends LazyRoCC(opcodes, nPTWPorts = 1) {
+  override lazy val module = new _TranslatorExampleModuleImp(this)
 }
 
-class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameters) extends LazyRoCCModuleImp(outer)
+class _TranslatorExampleModuleImp(outer: _TranslatorExample)(implicit p: Parameters) extends LazyRoCCModuleImp(outer)
     with HasCoreParameters {
   
 
@@ -2934,18 +2932,467 @@ class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameter
 
 
 
+/*
+
+//mem_totla inside
+class  BaseBillionMem(opcodes: OpcodeSet)(implicit p: Parameters) extends LazyRoCC(opcodes, nPTWPorts = 1) {
+  override lazy val module = new BaseBillionMemImp(this)
+}
+
+class BaseBillionMemImp(outer: BaseBillionMem)(implicit p: Parameters) extends LazyRoCCModuleImp(outer)
+    with HasCoreParameters {
+
+*/
 
 
 
 
 
+//mem_totla inside
+class  TranslatorExample(opcodes: OpcodeSet)(implicit p: Parameters) extends LazyRoCC(opcodes, nPTWPorts = 1) {
+  override lazy val module = new TranslatorExampleModuleImp(this)
+}
+
+class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameters) extends LazyRoCCModuleImp(outer)
+    with HasCoreParameters {
+  
+
+
+  
+
+  val busy = Reg(init = {Bool(false)}) //initialize to false
+  val r_recv_max  = Reg(UInt(width = xLen));
+  val r_cmd_count = Reg(UInt(width = xLen));
+  val r_recv_count = Reg(UInt(width = xLen));
+  val r_resp_rd = Reg(io.resp.bits.rd)
+  val r_addr = Reg(UInt(width = xLen))
+ 
+  val BaseBillion64PP = Reg(Vec(Seq.fill(4)(0.U(64.W)))) // each base billion no is 32-bit
+  val BaseBillion32PP = Reg(Vec(Seq.fill(4)(0.U(32.W)))) // after convert carry resolve
+  val BCDPP           = Reg(Vec(Seq.fill(4)(0.U(36.W)))) // to convert 32-bit BCD requre 36-bit	
+ // val hop = Reg(Vec(Seq.fill(3)(0.U(64.W))))
+ // val est = Reg(Vec(Seq.fill(3)(0.U(64.W))))
+  val BaseBillion64PP_Temp = Reg(Vec(Seq.fill(2)(0.U(64.W)))) 
+  // datapath
+  val r_total = Reg(UInt(width = xLen));//Result
+  
+  val r_tag = Reg(UInt(width = 4))//riaz add outer
+  val s_idle :: s_mem_acc :: s_finish :: Nil = Enum(Bits(), 3) //FSM
+  val r_cmd_state = Reg(UInt(width = 3), init = s_idle) // register withd 3 initail value S_idle
+  val r_recv_state = Reg(UInt(width = 3), init = s_idle)
+  when (io.cmd.valid) {
+  printf("MemTotalExample: On Going. %x, %x\n", r_cmd_state, r_recv_state)
+  }
+  when (io.cmd.fire()) {
+  printf("riaz MemTotalExample: Command Received. %x, %x\n", io.cmd.bits.rs1, io.cmd.bits.rs2)
+  r_total := UInt(0)
+  r_addr := io.cmd.bits.rs1 //address of array 
+  r_recv_max := 4.U // fixed 4 Base billion arry are received
+
+  BaseBillion64PP := Vec(Seq.fill(4)(0.U(64.W)))
+  BaseBillion32PP := Vec(Seq.fill(4)(0.U(32.W)))
+  BCDPP := Vec(Seq.fill(4)(0.U(36.W)))
+
+
+  r_recv_count := UInt(0)
+  r_cmd_count := UInt(0)
+  r_tag := UInt(0)
+  r_resp_rd := io.cmd.bits.inst.rd // result are transfer to core
+  r_cmd_state := s_mem_acc
+  r_recv_state := s_mem_acc
+  }
+  io.cmd.ready := (r_cmd_state === s_idle)
+  // command resolved if no stalls AND not issuing a load that will need a request
+  val cmd_finished = r_cmd_count === r_recv_max
+  when ((r_cmd_state === s_mem_acc) && io.mem.req.fire()) {
+   printf("riaz MemTotalExample: Command Received. %x, %x\n", io.cmd.bits.rs1, io.cmd.bits.rs2)
+
+  printf("MemTotalExample: IO.MEM Command Received %x %x \n ", io.mem.resp.bits.data, r_cmd_state)
+  r_cmd_count := r_cmd_count + UInt(1)
+  r_tag := r_tag + UInt(1)
+  r_addr := r_addr + UInt(8)
+  r_cmd_state := Mux(cmd_finished, s_idle, s_mem_acc)
+  }
+  // MEMORY REQUEST INTERFACE
+  io.mem.req.valid := (r_cmd_state === s_mem_acc)
+  io.mem.req.bits.addr := r_addr
+  io.mem.req.bits.tag := r_tag
+  io.mem.req.bits.cmd := M_XRD // perform a load (M_XWR for stores)
+  io.mem.req.bits.typ := MT_D // D = 8 bytes, W = 4, H = 2, B = 1
+  io.mem.req.bits.data := Bits(0) // we're not performing any stores...
+  io.mem.req.bits.phys := Bool(false)
+ // io.mem.invalidate_lr := Bool(false)
+  val recv_finished = (r_recv_count === r_recv_max)
+  
 
 
 
 
 
+ when (r_recv_state === s_mem_acc && io.mem.resp.valid) {
+       printf("riaz MemTotalExample: Command Received. %x, %x\n", io.cmd.bits.rs1, io.cmd.bits.rs2)
+
+     //===++++++++++++++++++++BaseBillionTOBCD-----------------------------------
+
+            val b0, b1, b2, b3, b4, b5, b6, b7, b8,b9, b10, b11, b12, b13, b14, b15, b16,b17, b18, b19, b20,b21, b22, b23, b24,b25 = Wire(Bits(4.W))
+	    val a0, a1, a2, a3, a4, a5, a6, a7, a8,a9, a10, a11, a12, a13, a14, a15,a16,a17, a18, a19, a20,a21, a22, a23, a24, a25,a26,  a27,a28 = Wire(Bits(4.W))
+	    val c0, c1, c2, c3, c4, c5, c6, c7, c8,c9, c10, c11, c12, c13, c14, c15,c16,c17, c18, c19, c20,c21, c22, c23 = Wire(Bits(4.W))
+	    val d0, d1, d2, d3, d4, d5, d6, d7, d8,d9, d10, d11, d12, d13, d14, d15,d16,d17, d18, d19 = Wire(Bits(4.W))
+	    val e0, e1, e2, e3, e4, e5, e6, e7, e8,e9, e10, e11, e12, e13, e14, e15,e16= Wire(Bits(4.W))
+	    val f0, f1, f2, f3, f4, f5, f6, f7, f8,f9, f10, f11, f12, f13= Wire(Bits(4.W))
+	    val g0, g1, g2, g3, g4, g5, g6, g7, g8,g9, g10 = Wire(Bits(4.W))
+	    val h0, h1, h2, h3, h4, h5, h6, h7= Wire(Bits(4.W))
+	    val i0, i1, i2, i3, i4,i5= Wire(Bits(4.W))
+	    val j0, j1= Wire(Bits(4.W))
+
+	    val BCD_Val = Wire(Vec(4,Bits(36.W)))
 
 
+
+	   def add3(a:Bits):Bits=
+	    {
+	    val in,out = Wire (Bits(4.W))
+	       in :=a
+	       when     (in=== Bits("b0000")) { out := Bits("b0000")} 
+	      .elsewhen (in=== Bits("b0001")) { out := Bits("b0001")}
+	      .elsewhen (in=== Bits("b0010")) { out := Bits("b0010")}
+	      .elsewhen (in=== Bits("b0011")) { out := Bits("b0011")}
+	      .elsewhen (in=== Bits("b0100")) { out := Bits("b0100")}
+	      .elsewhen (in=== Bits("b0101")) { out := Bits("b1000")}
+	      .elsewhen (in=== Bits("b0110")) { out := Bits("b1001")}
+	      .elsewhen (in=== Bits("b0111")) { out := Bits("b1010")}
+	      .elsewhen (in=== Bits("b1000")) { out := Bits("b1011")}
+	      .elsewhen (in=== Bits("b1001")) { out := Bits("b1100")}
+	      .otherwise { out := Bits("b0000")}
+	     // printf("in and out are %x, %x\n",in,out)
+	    return out.asUInt
+	    }//end add3
+
+
+	    //binary to decimal conversion shift-ad3 algorithm 
+	    def binary_BCD (a:Bits) : Bits = 
+	    {
+	      val in  = Wire (Bits(32.W))
+	      val out = Wire (Bits(42.W))
+	      val out1,out2,out3,out4,out5,out6,out7,out8,out9,out10 = Wire (Bits(4.W))
+	      val out11 = Wire(Bits(1.W))
+	      in :=a
+	      a0 :=  add3 (Cat(Bits("b0"),in(31,29)))
+
+	      a1 :=  add3 (Cat(a0(2,0),in(28)))
+	      a2 :=  add3 (Cat(a1(2,0),in(27)))
+	      a3 :=  add3 (Cat(a2(2,0),in(26)))
+	      a4 :=  add3 (Cat(a3(2,0),in(25)))
+	      a5 :=  add3 (Cat(a4(2,0),in(24)))
+	      a6 :=  add3 (Cat(a5(2,0),in(23)))
+	      a7 :=  add3 (Cat(a6(2,0),in(22)))
+	      a8 :=  add3 (Cat(a7(2,0),in(21)))
+	      a9 :=  add3 (Cat(a8(2,0),in(20)))
+	      a10 :=  add3 (Cat(a9(2,0),in(19)))
+	      a11 :=  add3 (Cat(a10(2,0),in(18)))
+	      a12 :=  add3 (Cat(a11(2,0),in(17)))
+	      a13 :=  add3 (Cat(a12(2,0),in(16)))
+	      a14 :=  add3 (Cat(a13(2,0),in(15)))
+	      a15 :=  add3 (Cat(a14(2,0),in(14)))
+	      a16 :=  add3 (Cat(a15(2,0),in(13)))
+	      a17 :=  add3 (Cat(a16(2,0),in(12)))
+	      a18 :=  add3 (Cat(a17(2,0),in(11)))
+	      a19 :=  add3 (Cat(a18(2,0),in(10)))
+	      a20 :=  add3 (Cat(a19(2,0),in(9)))
+	      a21 :=  add3 (Cat(a20(2,0),in(8)))
+	      a22 :=  add3 (Cat(a21(2,0),in(7)))
+	      a23 :=  add3 (Cat(a22(2,0),in(6)))
+
+	      a24 :=  add3 (Cat(a23(2,0),in(5)))
+	      a25 :=  add3 (Cat(a24(2,0),in(4)))
+	      a26 :=  add3 (Cat(a25(2,0),in(3)))
+	      a27 :=  add3 (Cat(a26(2,0),in(2)))
+	      out1 :=  add3 (Cat(a27(2,0),in(1))) // 4:1
+	      printf("friat bit finish 6 %x\n",out1)
+
+	      b0 :=  add3 (Cat(Bits("b0"),a0(3),a1(3),a2(3)))
+	      b1 :=  add3 (Cat(b0(2,0),a3(3)))
+	      b2 := add3 (Cat(b1(2,0),a4(3)))
+	      b3 := add3 (Cat(b2(2,0),a5(3)))
+	      b4 := add3 (Cat(b3(2,0),a6(3)))
+	      b5 := add3 (Cat(b4(2,0),a7(3)))
+	      b6 := add3 (Cat(b5(2,0),a8(3)))
+	      b7 := add3 (Cat(b6(2,0),a9(3)))
+	      b8 := add3 (Cat(b7(2,0),a10(3)))
+	      b9 := add3 (Cat(b8(2,0),a11(3)))
+
+	      b10 := add3 (Cat(b9(2,0),a12(3)))
+	      b11 := add3 (Cat(b10(2,0),a13(3)))
+	      b12 := add3 (Cat(b11(2,0),a14(3)))
+	      b13 := add3 (Cat(b12(2,0),a15(3)))
+	      b14 := add3 (Cat(b13(2,0),a16(3)))
+	      b15 := add3 (Cat(b14(2,0),a17(3)))
+	      b16 := add3 (Cat(b15(2,0),a18(3)))
+	      b17 := add3 (Cat(b16(2,0),a19(3)))
+	      b18 := add3 (Cat(b17(2,0),a20(3)))
+	      b19 := add3 (Cat(b18(2,0),a21(3)))
+	      b20 := add3 (Cat(b19(2,0),a22(3)))
+	      b21 := add3 (Cat(b20(2,0),a23(3)))
+	      b22 := add3 (Cat(b21(2,0),a24(3)))
+	      b23 := add3 (Cat(b22(2,0),a25(3)))
+	      b24 := add3 (Cat(b23(2,0),a26(3)))
+
+	      out2 := add3 (Cat(b24(2,0),a27(3))) //8:5
+	      printf("second bit should 1 %x\n",out2)
+
+	      c0  :=  add3 (Cat(Bits("b0"),b0(3),b1(3),b2(3)))
+	      c1  :=  add3 (Cat(c0(2,0),b3(3)))
+	      c2  := add3 (Cat(c1(2,0),b4(3)))
+	      c3  := add3 (Cat(c2(2,0),b5(3)))
+	      c4  := add3 (Cat(c3(2,0),b6(3)))
+	      c5  := add3 (Cat(c4(2,0),b7(3)))
+	      c6  := add3 (Cat(c5(2,0),b8(3)))
+	      c7  := add3 (Cat(c6(2,0),b9(3)))
+	      c8  := add3 (Cat(c7(2,0),b10(3)))
+	      c9  := add3 (Cat(c8(2,0),b11(3)))
+
+	      c10 := add3 (Cat(c9(2,0),b12(3)))
+	      c11 := add3 (Cat(c10(2,0),b13(3)))
+	      c12 := add3 (Cat(c11(2,0),b14(3)))
+	      c13 := add3 (Cat(c12(2,0),b15(3)))
+	      c14 := add3 (Cat(c13(2,0),b16(3)))
+	      c15 := add3 (Cat(c14(2,0),b17(3)))
+	      c16 := add3 (Cat(c15(2,0),b18(3)))
+	      c17 := add3 (Cat(c16(2,0),b19(3)))
+	      c18 := add3 (Cat(c17(2,0),b20(3)))
+	      c19 := add3 (Cat(c18(2,0),b21(3)))
+	      c20 := add3 (Cat(c19(2,0),b22(3)))
+	      c21 := add3 (Cat(c20(2,0),b23(3)))
+
+	      out3 := add3 (Cat(c21(2,0),b24(3))) // 12-9
+	      printf("Third bit should 2 %x\n",out3)
+
+	      d0  :=  add3 (Cat(Bits("b0"),c0(3),c1(3),c2(3)))
+	      d1  :=  add3 (Cat(d0(2,0),c3(3)))
+	      d2  := add3 (Cat(d1(2,0),c4(3)))
+	      d3  := add3 (Cat(d2(2,0),c5(3)))
+
+	      d4  := add3 (Cat(d3(2,0),c6(3)))
+	      d5  := add3 (Cat(d4(2,0),c7(3)))
+	      d6  := add3 (Cat(d5(2,0),c8(3)))
+	      d7  := add3 (Cat(d6(2,0),c9(3)))
+	      d8  := add3 (Cat(d7(2,0),c10(3)))
+	      d9  := add3 (Cat(d8(2,0),c11(3)))
+	      d10 := add3 (Cat(d9(2,0),c12(3)))
+	      d11 := add3 (Cat(d10(2,0),c13(3)))
+	      d12 := add3 (Cat(d11(2,0),c14(3)))
+	      d13 := add3 (Cat(d12(2,0),c15(3)))
+	      d14 := add3 (Cat(d13(2,0),c16(3)))
+	      d15 := add3 (Cat(d14(2,0),c17(3)))
+	      d16 := add3 (Cat(d15(2,0),c18(3)))
+	      d17 := add3 (Cat(d16(2,0),c19(3)))
+	      d18 := add3 (Cat(d17(2,0),c20(3)))
+
+
+	      out4 := add3 (Cat(d18(2,0),c21(3)))//13:16
+
+	      e0  :=  add3 (Cat(Bits("b0"),d0(3),d1(3),d2(3)))
+	      e1  :=  add3 (Cat(e0(2,0),d3(3)))
+	      e2  := add3 (Cat(e1(2,0),d4(3)))
+	      e3  := add3 (Cat(e2(2,0),d5(3)))
+
+	      e4  := add3 (Cat(e3(2,0),d6(3)))
+	      e5  := add3 (Cat(e4(2,0),d7(3)))
+	      e6  := add3 (Cat(e5(2,0),d8(3)))
+	      e7  := add3 (Cat(e6(2,0),d9(3)))
+	      e8  := add3 (Cat(e7(2,0),d10(3)))
+	      e9  := add3 (Cat(e8(2,0),d11(3)))
+	      e10 := add3 (Cat(e9(2,0),d12(3)))
+	      e11 := add3 (Cat(e10(2,0),d13(3)))
+	      e12 := add3 (Cat(e11(2,0),d14(3)))
+	      e13 := add3 (Cat(e12(2,0),d15(3)))
+	      e14 := add3 (Cat(e13(2,0),d16(3)))
+	      e15 := add3 (Cat(e14(2,0),d17(3)))
+
+	      out5 := add3 (Cat(e15(2,0),d18(3))) //17:20
+
+
+	      f0 :=  add3 (Cat(Bits("b0"),e0(3),e1(3),e2(3)))
+	      f1 :=  add3 (Cat(f0(2,0),e3(3)))
+	      f2 :=  add3 (Cat(f1(2,0),e4(3)))
+	      f3 :=  add3 (Cat(f2(2,0),e5(3)))
+	      f4 :=  add3 (Cat(f3(2,0),e6(3)))
+	      f5 :=  add3 (Cat(f4(2,0),e7(3)))
+	      f6 :=  add3 (Cat(f5(2,0),e8(3)))
+	      f7 :=  add3 (Cat(f6(2,0),e9(3)))
+	      f8 :=  add3 (Cat(f7(2,0),e10(3)))
+	      f9 :=  add3 (Cat(f8(2,0),e11(3)))
+	      f10:=  add3 (Cat(f9(2,0),e12(3)))
+	      f11:=  add3 (Cat(f10(2,0),e13(3)))
+	      f12:=  add3 (Cat(f11(2,0),e14(3)))
+
+
+	      out6 := add3 (Cat(f12(2,0),e15(3))) // 21-24
+
+	      g0 := add3 (Cat(Bits("b0"),f0(3),f1(3),f2(3)))
+	      g1 := add3 (Cat(g0(2,0),f3(3)))
+	      g2 := add3 (Cat(g1(2,0),f4(3)))
+	      g3 := add3 (Cat(g2(2,0),f5(3)))
+	      g4 := add3 (Cat(g3(2,0),f6(3)))
+	      g5 := add3 (Cat(g4(2,0),f7(3)))
+	      g6 := add3 (Cat(g5(2,0),f8(3)))
+	      g7 := add3 (Cat(g6(2,0),f9(3)))
+	      g8 := add3 (Cat(g7(2,0),f10(3)))
+	      g9 := add3 (Cat(g8(2,0),f11(3)))
+
+	      out7 := add3 (Cat(g9(2,0),f12(3))) // 25:28
+
+	      h0 := add3 (Cat(Bits("b0"),g0(3),g1(3),g2(3)))
+	      h1 := add3 (Cat(h0(2,0),g3(3)))
+	      h2 := add3 (Cat(h1(2,0),g4(3)))
+	      h3 := add3 (Cat(h2(2,0),g5(3)))
+	      h4 := add3 (Cat(h3(2,0),g6(3)))
+	      h5 := add3 (Cat(h4(2,0),g7(3)))
+	      h6 := add3 (Cat(h5(2,0),g8(3)))
+	      
+	      out8 := add3 (Cat(h6(2,0),g9(3))) // 32:29
+
+
+	      i0 := add3 (Cat(Bits("b0"),h0(3),h1(3),h2(3)))
+	      i1 := add3 (Cat(i0(2,0),h3(3)))
+	      i2 := add3 (Cat(i1(2,0),h4(3)))
+	      i3 := add3 (Cat(i2(2,0),h5(3)))
+	      //i4 := add3 (Cat(i3(2,0),h6(3)))
+
+	      out9 := add3 (Cat(i3(2,0),h6(3))) // 33:36
+
+	      j0 :=  add3 (Cat(Bits("b0"),i0(3),i1(3),i2(3)))
+
+	      out10 := add3 (Cat(j0(2,0),i3(3))) //37-40
+
+	      out11 := j0(3)
+
+	      out := Cat(out11,out10,out9,out8,out7,out6,out5,out4,out3,out2,out1,in(0)) 
+              printf(" conversion result of new %b is %b\n   and hex %x is %x\n ",in,out,in,out)
+               
+              //for valied BCD -base billion it returns 36 bit and for any binary it returns 38 bit
+
+	      return  out(35,0) .asUInt
+
+	    } //end binary_BCD 
+        
+
+                 
+
+
+	def BaseBillionToBCD (a_val:UInt) :UInt=
+	  {
+	    val in = Wire (Bits(128.W))
+            in := a_val
+	    
+                  
+
+	    BCD_Val(0) :=  binary_BCD(in(127,96)) // binary_BCD(  Bits("b00111010110111100110100010110001")) //987654321
+	    BCD_Val(1) :=  binary_BCD(in(95,64)) // binary_BCD( Bits("b00111011100110101100100111111111")) //999999999
+           BCD_Val(2) := binary_BCD(in(63,32)) // binary_BCD (Bits("b00000111010110111100110100010101")) //123456789
+           BCD_Val(3) := binary_BCD(in(63,32))  // binary_BCD( Bits("b00110101000011000010011110000110")) //889988998
+ 
+          
+         // val BCD_Val_1 = binary_BCD(in(127,96)) 
+	 // val BCD_Val_2 =binary_BCD(in(95,64)) 
+         // val BCD_Val_3 =binary_BCD (in(63,32)) 
+         // val BCD_Val_4 =binary_BCD(in(31,0) )
+ 
+
+            
+           printf("The final result in(baseBillion), out(BCD  %x  %x ", in.asUInt,  BCD_Val.asUInt)
+
+	     return BCD_Val.asUInt // Cat( BCD_Val_1,BCD_Val_2,BCD_Val_3,BCD_Val_3).asUInt
+	  }
+
+
+
+           printf("BCDPP %x ", BCDPP.asUInt )
+          //  printf("  BCD_val_test1 %x,  \n BCD_val_test2 %x , \n  BCD_val_test3 %x , \n BCD_val_test_4 %x  \n " ,  BCD_val_test,  BCD_val_test_1,  BCD_val_test_2,  BCD_val_test_2)
+
+	    //BCDConv := binary_BCD(cmd.bits.rs1)
+
+
+	   
+     //=======+==========BaseBillio to BCD end =================================
+
+
+        //==++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	 BaseBillion64PP(r_recv_count)  :=  io.mem.resp.bits.data
+         r_recv_count := r_recv_count + UInt(1)
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+           
+           val Billion = 1000000000L.U
+           val Magic   = 2305843009L.U        
+
+           val hop_1 = BaseBillion64PP(0)>>29.U
+           val est_1 = (hop_1*Magic)>>32.U
+           BaseBillion32PP(0) :=(BaseBillion64PP(0)-(est_1*Billion)) //first part of output
+
+           val temp_1 = BaseBillion64PP(1).asUInt +est_1.asUInt
+           val hop_2 =  (BaseBillion64PP(1) + est_1) >>29.U
+           val est_2 = (hop_2 * Magic) >> 32.U
+           BaseBillion32PP(1) :=  ((BaseBillion64PP(1) + est_1) -(est_2*Billion))
+
+
+          val temp_2 = (BaseBillion64PP(2) + est_2)
+          val hop_3 = (temp_2 >>29.U)
+          val est_3 = ((hop_3*Magic)>>32.U)
+          BaseBillion32PP(2) := (temp_2 - (est_3*Billion)) 
+          BaseBillion32PP(3) := est_3
+          
+         // val BCD_1,BCD_2,BCD_3,BCD_4 =// each base billion no is 32-bit Wire(Bits(64.W))
+
+
+           // BCD_1   :=   binary_BCD (BaseBillion32PP(0))
+           // BCD_2   :=   binary_BCD (BaseBillion32PP(1))
+           //BCD_3      :=   binary_BCD (BaseBillion32PP(2))
+           // BCD_4     :=   binary_BCD (BaseBillion32PP(3))
+  
+
+
+         // printf (" BCD-1 %x,   BCD-2 %x \n  BCD-3  %x,  \n   BCD-4  %x, \n  ", BCD_1, BCD_2, BCD_3, BCD_4)
+         // printf (" BCD-1 %x,   BCD-2 %x \n , BCD-2 %x \n   ", BCD_3, BCD_4, BCD_4)
+          //   val mofiz = Wire(Bits(144.W))
+            val  mofiz =  BaseBillionToBCD(BaseBillion32PP.asUInt)
+             printf("mofiz is %x ",mofiz)
+             r_total := BaseBillion32PP(3)  //  BaseBillionToBCD(BaseBillion32PP.asUInt).asUInt      // mofiz(63,0).asUInt  // Cat(BCDPP(0),BCDPP(1)).asUInt //  est_3 // binary_BC (BaseBillion32PP(2))
+
+  
+           printf("est_1%x, hop_1%x, \n est_2%x, hop_2%x, \n est_3%x, hop_3%x, \n BBtemp_1%x \n ,  BBtemp-2%x \n ",est_1,hop_1,est_2,hop_2,est_3,hop_3,temp_1,temp_2)  
+          printf("Input 64-bit are %d\n, %d\n, %d\n, %d\n", BaseBillion64PP(0), BaseBillion64PP(1), BaseBillion64PP(2),BaseBillion64PP(3) )
+          printf("Output 32-bit are %d\n, %d\n, %d\n, %d\n",BaseBillion32PP(0), BaseBillion32PP(1), BaseBillion32PP(2),BaseBillion32PP(3) )  
+//===================================================================
+  printf("MemTotalExample: IO.MEM Received %x %x\n", io.mem.resp.bits.data, r_recv_state)
+ // r_total := r_total + io.mem.resp.bits.data
+  
+  r_recv_state := Mux(recv_finished, s_finish, s_mem_acc)
+  }
+
+  // control line
+  when (io.mem.req.fire()) {
+  busy := Bool(true)
+  }
+  when ((r_recv_state === s_finish) && io.resp.fire()) {
+    printf("riaz MemTotalExample: Command Received. %x, %x\n", io.cmd.bits.rs1, io.cmd.bits.rs2)
+
+  r_recv_state := s_idle
+  printf("MemTotalExample: Finished. Answer = %x\n", r_total)
+  }
+  // PROC RESPONSE INTERFACE
+   io.resp.valid := (r_recv_state === s_finish)
+  // valid response if valid command, need a response, and no stalls
+  io.resp.bits.rd := r_resp_rd
+  // Must respond with the appropriate tag or undefined behavior
+  io.resp.bits.data := r_total
+  // Semantics is to always send out prior accumulator register value
+  io.busy := io.cmd.valid
+  // Be busy when have pending memory requests or committed possibility of pending requests
+  io.interrupt := Bool(false)
+  // Set this true to trigger an interrupt on the processor (please refer to supervisor documentation)
+ 
+  
+}
 
 
 
