@@ -152,7 +152,9 @@ trait HasLazyRoCCModule extends CanHavePTWModule
 	  val doDPDtoBCD = funct === UInt(9) //locked and checked
 	  val doReadTw = funct ===UInt(10)
 	  val doAccumMul = funct ===UInt(11)
-          val doLeadingZero = funct ===UInt(12)
+           val doLeadingZero = funct ===UInt(12)
+            val doLeadingZeroa = funct ===UInt(16)
+
 
 	  val memRespTag = io.mem.resp.bits.tag(log2Up(outer.n)-1,0)
 
@@ -2948,7 +2950,7 @@ class BaseBillionMemImp(outer: BaseBillionMem)(implicit p: Parameters) extends L
 
 
 
-//mem_totla inside
+//Base billion vs base thousand
 class  TranslatorExample(opcodes: OpcodeSet)(implicit p: Parameters) extends LazyRoCC(opcodes, nPTWPorts = 1) {
   override lazy val module = new TranslatorExampleModuleImp(this)
 }
@@ -2967,12 +2969,15 @@ class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameter
   val r_resp_rd = Reg(io.resp.bits.rd)
   val r_addr = Reg(UInt(width = xLen))
  
-  val BaseBillion64PP = Reg(Vec(Seq.fill(4)(0.U(64.W)))) // each base billion no is 32-bit
-  val BaseBillion32PP = Reg(Vec(Seq.fill(4)(0.U(32.W)))) // after convert carry resolve
-  val BCDPP           = Reg(Vec(Seq.fill(4)(0.U(36.W)))) // to convert 32-bit BCD requre 36-bit	
- // val hop = Reg(Vec(Seq.fill(3)(0.U(64.W))))
- // val est = Reg(Vec(Seq.fill(3)(0.U(64.W))))
-  val BaseBillion64PP_Temp = Reg(Vec(Seq.fill(2)(0.U(64.W)))) 
+  val r_BaseBillion64PP = Reg(Vec(Seq.fill(4)(0.U(64.W)))) // each base billion no is 32-bit
+  val r_BaseBillion32PP = Reg(Vec(Seq.fill(4)(0.U(32.W)))) // after convert carry resolve
+  val r_BCDPP           = Reg(Vec(Seq.fill(4)(0.U(36.W)))) // to convert 32-bit BCD requre 36-bit
+  val r_hop_1, r_est_1, r_temp_1, r_hop_2, r_est_2, r_temp_2,r_est_3, r_hop_3 = Reg(UInt(64.W))
+
+
+  
+
+
   // datapath
   val r_total = Reg(UInt(width = xLen));//Result
   
@@ -2980,59 +2985,8 @@ class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameter
   val s_idle :: s_mem_acc :: s_finish :: Nil = Enum(Bits(), 3) //FSM
   val r_cmd_state = Reg(UInt(width = 3), init = s_idle) // register withd 3 initail value S_idle
   val r_recv_state = Reg(UInt(width = 3), init = s_idle)
-  when (io.cmd.valid) {
-  printf("MemTotalExample: On Going. %x, %x\n", r_cmd_state, r_recv_state)
-  }
-  when (io.cmd.fire()) {
-  printf("riaz MemTotalExample: Command Received. %x, %x\n", io.cmd.bits.rs1, io.cmd.bits.rs2)
-  r_total := UInt(0)
-  r_addr := io.cmd.bits.rs1 //address of array 
-  r_recv_max := 4.U // fixed 4 Base billion arry are received
-
-  BaseBillion64PP := Vec(Seq.fill(4)(0.U(64.W)))
-  BaseBillion32PP := Vec(Seq.fill(4)(0.U(32.W)))
-  BCDPP := Vec(Seq.fill(4)(0.U(36.W)))
-
-
-  r_recv_count := UInt(0)
-  r_cmd_count := UInt(0)
-  r_tag := UInt(0)
-  r_resp_rd := io.cmd.bits.inst.rd // result are transfer to core
-  r_cmd_state := s_mem_acc
-  r_recv_state := s_mem_acc
-  }
-  io.cmd.ready := (r_cmd_state === s_idle)
-  // command resolved if no stalls AND not issuing a load that will need a request
-  val cmd_finished = r_cmd_count === r_recv_max
-  when ((r_cmd_state === s_mem_acc) && io.mem.req.fire()) {
-   printf("riaz MemTotalExample: Command Received. %x, %x\n", io.cmd.bits.rs1, io.cmd.bits.rs2)
-
-  printf("MemTotalExample: IO.MEM Command Received %x %x \n ", io.mem.resp.bits.data, r_cmd_state)
-  r_cmd_count := r_cmd_count + UInt(1)
-  r_tag := r_tag + UInt(1)
-  r_addr := r_addr + UInt(8)
-  r_cmd_state := Mux(cmd_finished, s_idle, s_mem_acc)
-  }
-  // MEMORY REQUEST INTERFACE
-  io.mem.req.valid := (r_cmd_state === s_mem_acc)
-  io.mem.req.bits.addr := r_addr
-  io.mem.req.bits.tag := r_tag
-  io.mem.req.bits.cmd := M_XRD // perform a load (M_XWR for stores)
-  io.mem.req.bits.typ := MT_D // D = 8 bytes, W = 4, H = 2, B = 1
-  io.mem.req.bits.data := Bits(0) // we're not performing any stores...
-  io.mem.req.bits.phys := Bool(false)
- // io.mem.invalidate_lr := Bool(false)
-  val recv_finished = (r_recv_count === r_recv_max)
   
-
-
-
-
-
- when (r_recv_state === s_mem_acc && io.mem.resp.valid) {
-       printf("riaz MemTotalExample: Command Received. %x, %x\n", io.cmd.bits.rs1, io.cmd.bits.rs2)
-
-     //===++++++++++++++++++++BaseBillionTOBCD-----------------------------------
+   //===++++++++++++++++++++BaseBillionTOBCD-----------------------------------
 
             val b0, b1, b2, b3, b4, b5, b6, b7, b8,b9, b10, b11, b12, b13, b14, b15, b16,b17, b18, b19, b20,b21, b22, b23, b24,b25 = Wire(Bits(4.W))
 	    val a0, a1, a2, a3, a4, a5, a6, a7, a8,a9, a10, a11, a12, a13, a14, a15,a16,a17, a18, a19, a20,a21, a22, a23, a24, a25,a26,  a27,a28 = Wire(Bits(4.W))
@@ -3045,10 +2999,7 @@ class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameter
 	    val i0, i1, i2, i3, i4,i5= Wire(Bits(4.W))
 	    val j0, j1= Wire(Bits(4.W))
 
-	    val BCD_Val = Wire(Vec(4,Bits(36.W)))
-
-
-
+	    
 	   def add3(a:Bits):Bits=
 	    {
 	    val in,out = Wire (Bits(4.W))
@@ -3077,6 +3028,10 @@ class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameter
 	      val out1,out2,out3,out4,out5,out6,out7,out8,out9,out10 = Wire (Bits(4.W))
 	      val out11 = Wire(Bits(1.W))
 	      in :=a
+
+                              
+
+               
 	      a0 :=  add3 (Cat(Bits("b0"),in(31,29)))
 
 	      a1 :=  add3 (Cat(a0(2,0),in(28)))
@@ -3108,7 +3063,7 @@ class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameter
 	      a26 :=  add3 (Cat(a25(2,0),in(3)))
 	      a27 :=  add3 (Cat(a26(2,0),in(2)))
 	      out1 :=  add3 (Cat(a27(2,0),in(1))) // 4:1
-	      printf("friat bit finish 6 %x\n",out1)
+	      // printf("frist bit finish 6 %x\n",out1)
 
 	      b0 :=  add3 (Cat(Bits("b0"),a0(3),a1(3),a2(3)))
 	      b1 :=  add3 (Cat(b0(2,0),a3(3)))
@@ -3138,7 +3093,7 @@ class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameter
 	      b24 := add3 (Cat(b23(2,0),a26(3)))
 
 	      out2 := add3 (Cat(b24(2,0),a27(3))) //8:5
-	      printf("second bit should 1 %x\n",out2)
+	      // printf("second bit should 1 %x\n",out2)
 
 	      c0  :=  add3 (Cat(Bits("b0"),b0(3),b1(3),b2(3)))
 	      c1  :=  add3 (Cat(c0(2,0),b3(3)))
@@ -3165,7 +3120,7 @@ class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameter
 	      c21 := add3 (Cat(c20(2,0),b23(3)))
 
 	      out3 := add3 (Cat(c21(2,0),b24(3))) // 12-9
-	      printf("Third bit should 2 %x\n",out3)
+	      // printf("Third bit should 2 %x\n",out3)
 
 	      d0  :=  add3 (Cat(Bits("b0"),c0(3),c1(3),c2(3)))
 	      d1  :=  add3 (Cat(d0(2,0),c3(3)))
@@ -3257,7 +3212,6 @@ class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameter
 	      i1 := add3 (Cat(i0(2,0),h3(3)))
 	      i2 := add3 (Cat(i1(2,0),h4(3)))
 	      i3 := add3 (Cat(i2(2,0),h5(3)))
-	      //i4 := add3 (Cat(i3(2,0),h6(3)))
 
 	      out9 := add3 (Cat(i3(2,0),h6(3))) // 33:36
 
@@ -3271,8 +3225,12 @@ class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameter
               printf(" conversion result of new %b is %b\n   and hex %x is %x\n ",in,out,in,out)
                
               //for valied BCD -base billion it returns 36 bit and for any binary it returns 38 bit
+               
+           
+              return  out(35,0) .asUInt // Nine LSD
 
-	      return  out(35,0) .asUInt
+
+            
 
 	    } //end binary_BCD 
         
@@ -3280,90 +3238,210 @@ class TranslatorExampleModuleImp(outer: TranslatorExample)(implicit p: Parameter
                  
 
 
+
+
+
+        //This method takes 128 base billion Vec of 4 32-bit and convert to BCD
 	def BaseBillionToBCD (a_val:UInt) :UInt=
 	  {
 	    val in = Wire (Bits(128.W))
             in := a_val
-	    
-                  
-
-	    BCD_Val(0) :=  binary_BCD(in(127,96)) // binary_BCD(  Bits("b00111010110111100110100010110001")) //987654321
-	    BCD_Val(1) :=  binary_BCD(in(95,64)) // binary_BCD( Bits("b00111011100110101100100111111111")) //999999999
-           BCD_Val(2) := binary_BCD(in(63,32)) // binary_BCD (Bits("b00000111010110111100110100010101")) //123456789
-           BCD_Val(3) := binary_BCD(in(63,32))  // binary_BCD( Bits("b00110101000011000010011110000110")) //889988998
+	    val BCD_Val = Wire(Vec(4,Bits(36.W)))
+      
+            BCD_Val(0) :=  binary_BCD(in(127,96)) 
+		// binary_BCD(  Bits("b00111010110111100110100010110001")) //987654321
+	    BCD_Val(1) :=  binary_BCD(in(95,64))
+		 // binary_BCD( Bits("b00111011100110101100100111111111")) //999999999
+            BCD_Val(2) := binary_BCD(in(63,32)) 
+		// binary_BCD (Bits("b00000111010110111100110100010101")) //123456789
+            BCD_Val(3) := binary_BCD(in(63,32)) 
+		 // binary_BCD( Bits("b00110101000011000010011110000110")) //889988998
  
-          
-         // val BCD_Val_1 = binary_BCD(in(127,96)) 
-	 // val BCD_Val_2 =binary_BCD(in(95,64)) 
-         // val BCD_Val_3 =binary_BCD (in(63,32)) 
-         // val BCD_Val_4 =binary_BCD(in(31,0) )
- 
-
-            
-           printf("The final result in(baseBillion), out(BCD  %x  %x ", in.asUInt,  BCD_Val.asUInt)
-
-	     return BCD_Val.asUInt // Cat( BCD_Val_1,BCD_Val_2,BCD_Val_3,BCD_Val_3).asUInt
+            printf("Final result in(baseBillion -%x) , out(BCD-%x) ", in.asUInt, BCD_Val.asUInt)
+            return BCD_Val.asUInt // Cat( BCD_Val_1,BCD_Val_2,BCD_Val_3,BCD_Val_3).asUInt
 	  }
 
 
 
-           printf("BCDPP %x ", BCDPP.asUInt )
-          //  printf("  BCD_val_test1 %x,  \n BCD_val_test2 %x , \n  BCD_val_test3 %x , \n BCD_val_test_4 %x  \n " ,  BCD_val_test,  BCD_val_test_1,  BCD_val_test_2,  BCD_val_test_2)
 
-	    //BCDConv := binary_BCD(cmd.bits.rs1)
+
+
+
+        
+	    //binary to decimal conversion shift-ad3 algorithm 
+	    def BCD_Binary (a:Bits) : UInt = 
+	    {   
+              val in  = Wire (Bits(36.W))
+	     // val out = Wire (Bits(32.W))
+	      in := a
+ 
+               val out = ( (in(3,0).asUInt) + (in(7,4).asUInt*10.U)+ (in(11,8).asUInt *100.U)+(in(15,12).asUInt*1000.U) + (in(19,16).asUInt*10000.U) + (in(23,20).asUInt*100000.U) + (in(27,24).asUInt*1000000.U) +  (in(28,25).asUInt*10000000.U) + (in(31,26).asUInt*100000000.U) + (in(36,32).asUInt*1000000000.U))
+     
+             printf( " BCD_BINARY  IN %x,  out %x" , in.asUInt, out.asUInt)
+
+             return out.asUInt	
+
+             }
+
+
+
+
+
 
 
 	   
      //=======+==========BaseBillio to BCD end =================================
 
+  when (io.cmd.valid) {
+  printf("Base Billion-Thousnad comparison: On Going. %x, %x\n", r_cmd_state, r_recv_state)
+  }
+  when (io.cmd.fire()) {
+  printf("riaz Example: Command Received. %x, %x\n", io.cmd.bits.rs1, io.cmd.bits.rs2)
+  r_total := UInt(0)
+  r_addr := io.cmd.bits.rs1 //address of array 
+  r_recv_max := 3.U // fixed 4 Base billion arry are received
 
+  r_BaseBillion64PP := Vec(Seq.fill(4)(0.U(64.W)))
+  r_BaseBillion32PP := Vec(Seq.fill(4)(0.U(32.W)))
+  r_BCDPP := Vec(Seq.fill(4)(0.U(36.W)))
+   r_hop_1:=UInt(0)
+   r_est_1 := UInt(0)
+   r_temp_1:= UInt(0)
+   r_hop_2 := UInt(0)
+   r_est_2  := UInt(0)
+   r_temp_2 := UInt(0)
+   r_hop_3 := UInt(0)
+   r_est_3 := UInt(0)
+
+  r_recv_count := UInt(0)
+  r_cmd_count := UInt(0)
+  r_tag := UInt(0)
+  r_resp_rd := io.cmd.bits.inst.rd // result are transfer to core
+  r_cmd_state := s_mem_acc
+  r_recv_state := s_mem_acc
+  }
+  io.cmd.ready := (r_cmd_state === s_idle)
+  // command resolved if no stalls AND not issuing a load that will need a request
+  val cmd_finished = r_cmd_count === r_recv_max
+  when ((r_cmd_state === s_mem_acc) && io.mem.req.fire()) {
+   printf("Example: Command Received. %x, %x\n", io.cmd.bits.rs1, io.cmd.bits.rs2)
+
+  printf("Example: IO.MEM Command Received %x %x \n ", io.mem.resp.bits.data, r_cmd_state)
+  r_cmd_count := r_cmd_count + UInt(1)
+  r_tag := r_tag + UInt(1)
+  r_addr := r_addr + UInt(8)
+  r_cmd_state := Mux(cmd_finished, s_idle, s_mem_acc)
+  }
+  // MEMORY REQUEST INTERFACE
+  io.mem.req.valid := (r_cmd_state === s_mem_acc)
+  io.mem.req.bits.addr := r_addr
+  io.mem.req.bits.tag := r_tag
+  io.mem.req.bits.cmd := M_XRD // perform a load (M_XWR for stores)
+  io.mem.req.bits.typ := MT_D // D = 8 bytes, W = 4, H = 2, B = 1
+  io.mem.req.bits.data := Bits(0) // we're not performing any stores...
+  io.mem.req.bits.phys := Bool(false)
+ // io.mem.invalidate_lr := Bool(false)
+  val recv_finished = (r_recv_count === r_recv_max)
+  
+
+  when (r_recv_state === s_mem_acc && io.mem.resp.valid) {
+  printf("riaz MemTotalExample: Command Received. %x, %x\n", io.cmd.bits.rs1, io.cmd.bits.rs2)
+
+    
         //==++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	 BaseBillion64PP(r_recv_count)  :=  io.mem.resp.bits.data
-         r_recv_count := r_recv_count + UInt(1)
+	//r_BaseBillion64PP(r_recv_count)  :=  io.mem.resp.bits.data
+        r_BaseBillion32PP(r_recv_count) := AutoCarry((io.mem.resp.bits.data).asUInt , r_recv_count.asUInt)
+       r_recv_count := r_recv_count + UInt(1)
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
            
-           val Billion = 1000000000L.U
-           val Magic   = 2305843009L.U        
+      // val Billion = 1000000000.U
+      // val Magic   = 2305843009L.U  
 
-           val hop_1 = BaseBillion64PP(0)>>29.U
+
+       def AutoCarry (a_val:UInt, b_val:UInt) : UInt = {
+            val in   = Reg(UInt(64.W))
+            val step = Reg(UInt(64.W))
+            val answer =  Reg(UInt(32.W))
+                in   := a_val
+                 step := b_val
+                  val Magic   = 2305843009L.U  
+                  val Billion = 1000000000.U
+
+            when(step === 0.U) {  
+                // printf("step-1 \n ")  
+                 r_hop_1 := in>>29.U
+                 r_est_1 := (r_hop_1*Magic)>>32.U
+                 answer := (in-(r_est_1*Billion.asUInt)).asUInt 
+             }
+            .elsewhen(step === 1.U){
+                // printf("step-2  \n ")
+                 r_temp_1 := in.asUInt + r_est_1.asUInt
+                 r_hop_2  := (in.asUInt + r_est_1) >>29.U
+                 r_est_2  := (r_hop_2 * Magic) >> 32.U
+                 answer := ( ((in + r_est_1) -(r_est_2*Billion.asUInt))).asUInt
+             }
+             .elsewhen (step === 2.U){
+              // printf("step-3 \n ")
+               r_temp_2 := (in.asUInt + r_est_2)
+               r_hop_3  := (r_temp_2 >>29.U)
+               r_est_3  := ((r_hop_3*Magic)>>32.U)
+               r_BaseBillion32PP(3) := r_est_3
+               answer :=  (r_temp_2 - (r_est_3*Billion.asUInt)).asUInt
+             }
+
+            .otherwise {
+               printf("wrong value entred")
+          
+             }
+           printf(" count%d \n , in%x  \n   ,  answer%x \n ",in,  step,answer)
+           return answer.asUInt
+         }
+
+  
+                 
+           /*
+           val Billion = 1000000000.U
+           val Magic   = 2305843009L.U  
+
+
+           val hop_1 = r_BaseBillion64PP(0)>>29.U
            val est_1 = (hop_1*Magic)>>32.U
-           BaseBillion32PP(0) :=(BaseBillion64PP(0)-(est_1*Billion)) //first part of output
+           r_BaseBillion32PP(0) :=(r_BaseBillion64PP(0)-(est_1*Billion)) //first part of output
+           r_BCDPP(0) := binary_BCD( (r_BaseBillion64PP(0)-(est_1*Billion))).asUInt
+ 
+           val temp_1 = r_BaseBillion64PP(1).asUInt + est_1.asUInt
+           val hop_2  = (r_BaseBillion64PP(1) + est_1) >>29.U
+           val est_2  = (hop_2 * Magic) >> 32.U
+           r_BaseBillion32PP(1) :=  ((r_BaseBillion64PP(1) + est_1) -(est_2*Billion))
+           r_BCDPP(1) := binary_BCD(((r_BaseBillion64PP(1) + est_1) -(est_2*Billion))).asUInt
 
-           val temp_1 = BaseBillion64PP(1).asUInt +est_1.asUInt
-           val hop_2 =  (BaseBillion64PP(1) + est_1) >>29.U
-           val est_2 = (hop_2 * Magic) >> 32.U
-           BaseBillion32PP(1) :=  ((BaseBillion64PP(1) + est_1) -(est_2*Billion))
 
-
-          val temp_2 = (BaseBillion64PP(2) + est_2)
+          val temp_2 = (r_BaseBillion64PP(2) + est_2)
           val hop_3 = (temp_2 >>29.U)
           val est_3 = ((hop_3*Magic)>>32.U)
-          BaseBillion32PP(2) := (temp_2 - (est_3*Billion)) 
-          BaseBillion32PP(3) := est_3
+          r_BaseBillion32PP(2) := (temp_2 - (est_3*Billion)) 
+          r_BCDPP(2) := binary_BCD( (temp_2 - (est_3*Billion)) ).asUInt
+
+            
+          r_BaseBillion32PP(3) := est_3
+          r_BCDPP(3) := binary_BCD(est_3.asUInt)
+
+         // val  BCD_result =  BaseBillionToBCD(r_BaseBillion32PP.asUInt)
+            
+         */
+          r_total :=    r_BaseBillion32PP(1)  // r_BCDPP.asUInt   
           
-         // val BCD_1,BCD_2,BCD_3,BCD_4 =// each base billion no is 32-bit Wire(Bits(64.W))
+         // val BCD_input = BCD_Binary(Bits("b000110001000100010001000100010001000"))
+         // printf("my BCD-Binary %x ",  BCD_input.asUInt)
+           
+          printf("Input 64-bit are %x\n", r_BaseBillion64PP.asUInt )
+          printf("Output 32-bit are %x\n",r_BaseBillion32PP.asUInt)  
+         // printf("result using BB64>BB32>single convert is %x \n " , BCD_result.asUInt)
+          printf("result using BB64>single convert is %x \n"  , r_BCDPP.asUInt)
 
-
-           // BCD_1   :=   binary_BCD (BaseBillion32PP(0))
-           // BCD_2   :=   binary_BCD (BaseBillion32PP(1))
-           //BCD_3      :=   binary_BCD (BaseBillion32PP(2))
-           // BCD_4     :=   binary_BCD (BaseBillion32PP(3))
-  
-
-
-         // printf (" BCD-1 %x,   BCD-2 %x \n  BCD-3  %x,  \n   BCD-4  %x, \n  ", BCD_1, BCD_2, BCD_3, BCD_4)
-         // printf (" BCD-1 %x,   BCD-2 %x \n , BCD-2 %x \n   ", BCD_3, BCD_4, BCD_4)
-          //   val mofiz = Wire(Bits(144.W))
-            val  mofiz =  BaseBillionToBCD(BaseBillion32PP.asUInt)
-             printf("mofiz is %x ",mofiz)
-             r_total := BaseBillion32PP(3)  //  BaseBillionToBCD(BaseBillion32PP.asUInt).asUInt      // mofiz(63,0).asUInt  // Cat(BCDPP(0),BCDPP(1)).asUInt //  est_3 // binary_BC (BaseBillion32PP(2))
-
-  
-           printf("est_1%x, hop_1%x, \n est_2%x, hop_2%x, \n est_3%x, hop_3%x, \n BBtemp_1%x \n ,  BBtemp-2%x \n ",est_1,hop_1,est_2,hop_2,est_3,hop_3,temp_1,temp_2)  
-          printf("Input 64-bit are %d\n, %d\n, %d\n, %d\n", BaseBillion64PP(0), BaseBillion64PP(1), BaseBillion64PP(2),BaseBillion64PP(3) )
-          printf("Output 32-bit are %d\n, %d\n, %d\n, %d\n",BaseBillion32PP(0), BaseBillion32PP(1), BaseBillion32PP(2),BaseBillion32PP(3) )  
-//===================================================================
-  printf("MemTotalExample: IO.MEM Received %x %x\n", io.mem.resp.bits.data, r_recv_state)
+          //printf("est_1%x, hop_1%x, \n est_2%x, hop_2%x, \n est_3%x, hop_3%x, \n BBtemp_1%x \n ,  BBtemp-2%x \n ",est_1,hop_1,est_2,hop_2,est_3,hop_3,temp_1,temp_2)  
+         //===================================================================
+  printf("Example: IO.MEM Received %x %x\n", io.mem.resp.bits.data, r_recv_state)
  // r_total := r_total + io.mem.resp.bits.data
   
   r_recv_state := Mux(recv_finished, s_finish, s_mem_acc)
