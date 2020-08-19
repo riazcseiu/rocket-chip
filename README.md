@@ -41,9 +41,16 @@ the RISC-V Rocket Core. For more information on Rocket Chip, please consult our 
 
 
 
-### File location for modify  and configure Rocc
+### File location for modify  and configure Rocc , dualCore etc.
 	cd~/project-template/rocket-chip/src/main/scala/system/Configs.scala
 	cd ~/project-template/rocket-chip/src/main/scala/subsystem/Configs.scala
+	or in github
+https://github.com/freechipsproject/rocket-chip/blob/master/src/main/scala/system/Configs.scala
+https://github.com/freechipsproject/rocket-chip/blob/master/src/main/scala/subsystem/Configs.scala
+
+Specifically, make your own classes based on DualCoreConfig class and WithNBigCores/WithNSmallCores classes with desired cache parameters
+	
+	
 ### Accelerator File for modification
 	cd ~/project-template/rocket-chip/src/main/scala/tile/LazyRoCC.scala
 
