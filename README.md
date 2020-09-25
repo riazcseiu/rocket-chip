@@ -83,36 +83,34 @@ Writing C code using accelerator and make the c executable for RISCV ISA
 
 ### Everything Is Open-Source!
 
-% # Get all software dependencies
-% sudo apt-get install scons python-dev m4 autoconf automake autotools-dev curl libmpc-dev libmpfr-dev
-libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev
-% # Download and build gem5
-% cd $HOME && git clone https://gem5.googlesource.com/public/gem5 && cd gem5
-% # Skip this step when this change is fully merged in upstream gem5
-% git pull https://gem5.googlesource.com/public/gem5 refs/changes/26/9626/4
-% # skip this step when this change is fully merged in upstream gem5
-% git pull https://gem5.googlesource.com/public/gem5 refs/changes/44/9644/3
-% scons build/RISCV/gem5.opt -j8
-% # Download and build RISC-V GNU toolchain
-% cd $HOME && git clone --recursive https://github.com/riscv/riscv-gnu-toolchain
-% cd riscv-gnu-toolchain/ && mkdir ./build && cd ./build
-% ../configure --prefix=$HOME/riscv-gnu-toolchain/build/
-% make linux -j8
-% export PATH=$PATH:$HOME/riscv-gnu-toolchain/build/bin/
-% # Download and build Ligra applications
-% cd $HOME && git clone https://github.com/jshun/ligra.git
-% cd $HOME/ligra/ligra/
-% # Modify Ligra to work with gem5
-% mv ligra.h ligra.h.old
-% sed '/long rounds/a int num cpu = P.getOptionIntValue("-n",1); setWorkers(num cpu);' ligra.h.old >
-ligra.h
-% cd $HOME/ligra/apps/
-% ln -s $HOME/ligra/ligra/* .
-% riscv64-unknown-linux-gnu-gcc -static -fopenmp -DOPENMP -Wall -O0 -I. -c BFS.C -o BFS.o
-% riscv64-unknown-linux-gnu-g++ -static -DOPENMP -L. -o BFS BFS.o -lgomp -lpthread -ldl
-% # Run BFS on gem5
-% $HOME/gem5/build/RISCV/gem5.opt $HOME/gem5/configs/example/se.py --cpu-type DerivO3CPU -n 4 -c ./BFS -o
-"-n 4 ../inputs/rMatGraph J 5 100" --caches
+	% # Get all software dependencies
+	% sudo apt-get install scons python-dev m4 autoconf automake autotools-dev curl libmpc-dev libmpfr-dev
+	libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev
+	% # Download and build gem5
+	% cd $HOME && git clone https://gem5.googlesource.com/public/gem5 && cd gem5
+	% # Skip this step when this change is fully merged in upstream gem5
+	% git pull https://gem5.googlesource.com/public/gem5 refs/changes/26/9626/4
+	% # skip this step when this change is fully merged in upstream gem5
+	% git pull https://gem5.googlesource.com/public/gem5 refs/changes/44/9644/3
+	% scons build/RISCV/gem5.opt -j8
+	% # Download and build RISC-V GNU toolchain
+	% cd $HOME && git clone --recursive https://github.com/riscv/riscv-gnu-toolchain
+	% cd riscv-gnu-toolchain/ && mkdir ./build && cd ./build
+	% ../configure --prefix=$HOME/riscv-gnu-toolchain/build/
+	% make linux -j8
+	% export PATH=$PATH:$HOME/riscv-gnu-toolchain/build/bin/
+	% # Download and build Ligra applications
+	% cd $HOME && git clone https://github.com/jshun/ligra.git
+	% cd $HOME/ligra/ligra/
+	% # Modify Ligra to work with gem5
+	% mv ligra.h ligra.h.old
+	% sed '/long rounds/a int num cpu = P.getOptionIntValue("-n",1); setWorkers(num cpu);' ligra.h.old >ligra.h
+	% cd $HOME/ligra/apps/
+	% ln -s $HOME/ligra/ligra/* .
+	% riscv64-unknown-linux-gnu-gcc -static -fopenmp -DOPENMP -Wall -O0 -I. -c BFS.C -o BFS.o
+	% riscv64-unknown-linux-gnu-g++ -static -DOPENMP -L. -o BFS BFS.o -lgomp -lpthread -ldl
+	% # Run BFS on gem5
+	% $HOME/gem5/build/RISCV/gem5.opt $HOME/gem5/configs/example/se.py --cpu-type DerivO3CPU -n 4 -c ./BFS -o"-n 4 ../inputs/rMatGraph J 5 100" --caches
 
 
 
